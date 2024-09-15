@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Media Box</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <header>
+        <h1>Media Box</h1>
+        <p>Watch TV Shows, Movies, and Anime</p>
+    </header>
+
+    <div class="search-container">
+        <input type="text" id="searchInput" placeholder="Search by IMDB/TMDB ID...">
+        <select id="contentType">
+            <option value="movie">Movie</option>
+            <option value="tv">TV Show</option>
+            <option value="anime">Anime</option>
+        </select>
+        <button id="searchBtn">Search</button>
+    </div>
+
+    <div id="mediaContainer" class="media-container"></div>
+
+    <footer>
+        <p>&copy; 2024 Media Box. Powered by 2Embed.cc API</p>
+    </footer>
+
+    <script src="script.js"></script>
+</body>
+</html>
