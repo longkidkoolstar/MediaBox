@@ -5,8 +5,8 @@
 }
 
 body {
-    font-family: Arial, sans-serif;
-    background-color: #f0f0f0;
+    font-family: 'Arial', sans-serif;
+    background-color: #f4f4f4;
     color: #333;
     display: flex;
     flex-direction: column;
@@ -21,59 +21,114 @@ header {
 
 h1 {
     font-size: 3em;
-    color: #2c3e50;
+    color: #1abc9c;
+}
+
+p {
+    font-size: 1.2em;
+    color: #7f8c8d;
 }
 
 .search-container {
     margin-top: 20px;
     display: flex;
-    align-items: center;
     gap: 10px;
+    justify-content: center;
+    align-items: center;
 }
 
 input[type="text"] {
-    padding: 10px;
-    font-size: 1em;
-    width: 300px;
-}
-
-select {
-    padding: 10px;
-    font-size: 1em;
+    padding: 12px;
+    font-size: 1.1em;
+    width: 350px;
+    border-radius: 8px;
+    border: 1px solid #ccc;
 }
 
 button {
-    padding: 10px 15px;
-    background-color: #2980b9;
+    padding: 12px 20px;
+    background-color: #1abc9c;
     color: #fff;
+    border: none;
+    cursor: pointer;
+    font-size: 1.1em;
+    border-radius: 8px;
+}
+
+button:hover {
+    background-color: #16a085;
+}
+
+.results-container {
+    margin-top: 30px;
+    width: 80%;
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 20px;
+}
+
+.media-item {
+    background-color: #fff;
+    padding: 15px;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+    border-radius: 8px;
+    text-align: center;
+}
+
+.media-item img {
+    width: 100%;
+    height: 300px;
+    object-fit: cover;
+    border-radius: 8px;
+}
+
+.media-item h3 {
+    margin-top: 10px;
+    font-size: 1.2em;
+    color: #2c3e50;
+}
+
+.media-item button {
+    margin-top: 10px;
+    padding: 8px 15px;
+    background-color: #1abc9c;
+    color: white;
     border: none;
     cursor: pointer;
     font-size: 1em;
     border-radius: 5px;
 }
 
-button:hover {
-    background-color: #3498db;
+.media-item button:hover {
+    background-color: #16a085;
 }
 
-.media-container {
-    margin-top: 20px;
-    display: flex;
-    justify-content: center;
-    width: 100%;
+.player-container {
+    margin-top: 30px;
+    width: 80%;
+    height: 600px;
+    display: none; /* Hidden until something is played */
 }
 
 iframe {
-    width: 80%;
-    height: 500px;
+    width: 100%;
+    height: 100%;
     border: none;
+}
+
+.episode-container {
+    margin-top: 20px;
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    display: none; /* Hidden until a TV show or anime is selected */
 }
 
 footer {
     margin-top: auto;
-    padding: 10px;
-    text-align: center;
+    padding: 20px;
     background-color: #2c3e50;
     color: #fff;
     width: 100%;
+    text-align: center;
 }
