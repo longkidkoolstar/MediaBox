@@ -88,7 +88,15 @@ function playTvShow(id) {
     const embedUrl = `https://www.2embed.cc/embedtv/${id}&s=${season}&e=${episode}`;
 
     const resultsContainer = document.getElementById('resultsContainer');
-    resultsContainer.innerHTML = `<iframe src="${embedUrl}" style="width: 100%; height: 100%; border: none;" allowfullscreen></iframe>`;
+    const iframeStyle = window.innerWidth > 768 ? 'width: 1000px;' : 'width: 100%;';
+    resultsContainer.innerHTML = `<iframe src="${embedUrl}" style="${iframeStyle} height: 100%; border: none;" allowfullscreen></iframe>`;
+    resultsContainer.style.height = "500px";  // Set a specific height for the container
+}
+
+function playMedia(embedUrl) {
+    const resultsContainer = document.getElementById('resultsContainer');
+    const iframeStyle = window.innerWidth > 768 ? 'width: 1000px;' : 'width: 100%;';
+    resultsContainer.innerHTML = `<iframe src="${embedUrl}" style="${iframeStyle} height: 100%; border: none;" allowfullscreen></iframe>`;
     resultsContainer.style.height = "500px";  // Set a specific height for the container
 }
 
@@ -110,11 +118,5 @@ async function updateEpisodeDropdown(id) {
     for (let i = 1; i <= numEpisodes; i++) {
         episodeSelect.innerHTML += `<option value="${i}">Episode ${i}</option>`;
     }
-}
-
-function playMedia(embedUrl) {
-    const resultsContainer = document.getElementById('resultsContainer');
-    resultsContainer.innerHTML = `<iframe src="${embedUrl}" style="width: 100%; height: 100%; border: none;" allowfullscreen></iframe>`;
-    resultsContainer.style.height = "500px";  // Set a specific height for the container
 }
 
