@@ -24,15 +24,18 @@ document.getElementById('searchBtn').addEventListener('click', async function ()
         data.results.forEach(async item => {
             const mediaItem = document.createElement('div');
             mediaItem.classList.add('media-item');
-
-            const mediaTitle = item.title || item.name;
+        
+            const mediaTitle = item.title || item.name || 'Unknown Title';
             const posterPath = item.poster_path ? `https://image.tmdb.org/t/p/w500/${item.poster_path}` : 'https://via.placeholder.com/200x300?text=No+Image';
-
+        
             let embedUrl = '';
             let seasonDropdown = '';
             let episodeDropdown = '';
             let playButton = '';
-
+        
+            // Check for the media type or genres
+            const isAnime = item.genre_ids && item.genre_ids.includes(16);  // 16 is the genre ID for Animation in TMDB
+        
             switch (item.media_type) {
                 case 'movie':
                     embedUrl = `https://www.2embed.cc/embed/${item.id}`;
@@ -43,39 +46,33 @@ document.getElementById('searchBtn').addEventListener('click', async function ()
                     const tvShowUrl = `https://api.themoviedb.org/3/tv/${item.id}?api_key=${apiKey}`;
                     const tvShowResponse = await fetch(tvShowUrl);
                     const tvShowData = await tvShowResponse.json();
-
+        
                     const numSeasons = tvShowData.number_of_seasons;
-                    const numEpisodes = tvShowData.number_of_episodes;
-
+        
                     seasonDropdown = `<select id="seasonSelect${item.id}" onchange="updateEpisodeDropdown(${item.id})">`;
                     for (let i = 1; i <= numSeasons; i++) {
                         seasonDropdown += `<option value="${i}">Season ${i}</option>`;
                     }
                     seasonDropdown += `</select>`;
-
-                    episodeDropdown = `<select id="episodeSelect${item.id}">`;
-                    for (let i = 1; i <= numEpisodes; i++) {
-                        episodeDropdown += `<option value="${i}">Episode ${i}</option>`;
-                    }
-                    episodeDropdown += `</select>`;
-
-                    playButton = `<button onclick="playTvShow('${item.id}')">Watch Now</button>`;
-                    break;
-                case 'anime':
-                    embedUrl = `https://2anime.xyz/embed/${item.title.replace(/\s+/g, '-').toLowerCase()}-1`;
-                    playButton = `<button onclick="playMedia('${embedUrl}')">Watch Now</button>`;
+        
+                    episodeDropdown = `<select id="episodeSelect${item.id}"></select>`;
+        
+                    playButton = isAnime 
+                        ? `<button onclick="playAnime('${item.title}')">Watch Now</button>` 
+                        : `<button onclick="playTvShow('${item.id}')">Watch Now</button>`;
                     break;
             }
-
+        
             mediaItem.innerHTML = `
                 <img src="${posterPath}" alt="${mediaTitle}">
                 <h3>${mediaTitle}</h3>
                 ${seasonDropdown} ${episodeDropdown}
                 ${playButton}
             `;
-
+        
             resultsContainer.appendChild(mediaItem);
         });
+        
     } catch (error) {
         resultsContainer.innerHTML = '<p>Something went wrong. Please try again later.</p>';
         console.error('Error fetching data:', error);
@@ -91,6 +88,11 @@ function playTvShow(id) {
     const iframeStyle = window.innerWidth > 768 ? 'width: 1000px;' : 'width: 100%;';
     resultsContainer.innerHTML = `<iframe src="${embedUrl}" style="${iframeStyle} height: 100%; border: none;" allowfullscreen></iframe>`;
     resultsContainer.style.height = "500px";  // Set a specific height for the container
+}
+
+function playAnime(title) {
+    const embedUrl = `https://2anime.xyz/embed/${title.replace(/\s+/g, '-').toLowerCase()}-1`;
+    playMedia(embedUrl);
 }
 
 function playMedia(embedUrl) {
