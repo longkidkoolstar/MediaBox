@@ -8,6 +8,42 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
 </head>
 <body>
+    <!-- Auth Modal -->
+    <div id="authModal" class="modal">
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            <div class="auth-tabs">
+                <button class="auth-tab active" data-tab="signin">Sign In</button>
+                <button class="auth-tab" data-tab="signup">Sign Up</button>
+            </div>
+            
+            <!-- Sign In Form -->
+            <form id="signinForm" class="auth-form">
+                <input type="email" placeholder="Email" required>
+                <input type="password" placeholder="Password" required>
+                <button type="submit">Sign In</button>
+            </form>
+            
+            <!-- Sign Up Form -->
+            <form id="signupForm" class="auth-form" style="display: none;">
+                <input type="text" placeholder="Username" required>
+                <input type="email" placeholder="Email" required>
+                <input type="password" placeholder="Password" required>
+                <input type="password" placeholder="Confirm Password" required>
+                <button type="submit">Sign Up</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- User Menu -->
+    <div class="user-menu">
+        <button id="authButton" class="auth-button">Sign In</button>
+        <div id="userDropdown" class="user-dropdown" style="display: none;">
+            <span id="username"></span>
+            <button id="logoutButton">Logout</button>
+        </div>
+    </div>
+
     <header>
         <h1>Media Box</h1>
         <p>Discover and Watch Movies, TV Shows, and Anime</p>
@@ -29,12 +65,6 @@
     </div>
 
     <div id="resultsContainer" class="results-container"></div>
-
-    <!--
-    <footer>
-        <p>&copy; 2024 Media Box. Powered by 2Embed.cc API</p>
-    </footer>
-    -->
 
     <script src="script.js"></script>
 </body>
