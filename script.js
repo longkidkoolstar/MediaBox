@@ -226,6 +226,29 @@ class UserManager {
     }
 }
 
+// Global media player functions
+window.playTvShow = function(id) {
+    const season = document.getElementById('seasonSelect').value;
+    const episode = document.getElementById('episodeSelect').value;
+    const embedUrl = `https://www.2embed.cc/embedtv/${id}&s=${season}&e=${episode}`;
+    const resultsContainer = document.getElementById('resultsContainer');
+    const iframeStyle = window.innerWidth > 768 ? 'width: 1000px;' : 'width: 100%;';
+    resultsContainer.innerHTML = `<iframe src="${embedUrl}" style="${iframeStyle} height: 100%; border: none;" allowfullscreen></iframe>`;
+    resultsContainer.style.height = "500px";  // Set a specific height for the container
+};
+
+window.playAnime = function(title) {
+    const embedUrl = `https://2anime.xyz/embed/${title.replace(/\s+/g, '-').toLowerCase()}-1`;
+    window.playMedia(embedUrl);
+};
+
+window.playMedia = function(embedUrl) {
+    const resultsContainer = document.getElementById('resultsContainer');
+    const iframeStyle = window.innerWidth > 768 ? 'width: 1000px;' : 'width: 100%;';
+    resultsContainer.innerHTML = `<iframe src="${embedUrl}" style="${iframeStyle} height: 100%; border: none;" allowfullscreen></iframe>`;
+    resultsContainer.style.height = "500px";  // Set a specific height for the container
+};
+
 // Initialize everything after DOM is loaded
 document.addEventListener('DOMContentLoaded', async () => {
     // Initialize user manager
@@ -320,7 +343,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 switch (item.media_type) {
                     case 'movie':
                         embedUrl = `https://www.2embed.cc/embed/${item.id}`;
-                        playButton = `<button onclick="playMedia('${embedUrl}')">Watch Now</button>`;
+                        playButton = `<button onclick="window.playMedia('${embedUrl}')">Watch Now</button>`;
                         break;
                     case 'tv':
                         // Fetch the number of seasons and episodes dynamically
@@ -339,8 +362,8 @@ document.addEventListener('DOMContentLoaded', async () => {
                         episodeDropdown = `<select id="episodeSelect${item.id}"></select>`;
         
                         playButton = isAnime 
-                            ? `<button onclick="playAnime('${item.title}')">Watch Now</button>` 
-                            : `<button onclick="playTvShow('${item.id}')">Watch Now</button>`;
+                            ? `<button onclick="window.playAnime('${item.title}')">Watch Now</button>` 
+                            : `<button onclick="window.playTvShow('${item.id}')">Watch Now</button>`;
                         break;
                 }
         
@@ -364,29 +387,6 @@ document.addEventListener('DOMContentLoaded', async () => {
             console.error('Error fetching data:', error);
         }
     });
-
-    function playTvShow(id) {
-        const season = document.getElementById(`seasonSelect${id}`).value;
-        const episode = document.getElementById(`episodeSelect${id}`).value;
-        const embedUrl = `https://www.2embed.cc/embedtv/${id}&s=${season}&e=${episode}`;
-
-        const resultsContainer = document.getElementById('resultsContainer');
-        const iframeStyle = window.innerWidth > 768 ? 'width: 1000px;' : 'width: 100%;';
-        resultsContainer.innerHTML = `<iframe src="${embedUrl}" style="${iframeStyle} height: 100%; border: none;" allowfullscreen></iframe>`;
-        resultsContainer.style.height = "500px";  // Set a specific height for the container
-    }
-
-    function playAnime(title) {
-        const embedUrl = `https://2anime.xyz/embed/${title.replace(/\s+/g, '-').toLowerCase()}-1`;
-        playMedia(embedUrl);
-    }
-
-    function playMedia(embedUrl) {
-        const resultsContainer = document.getElementById('resultsContainer');
-        const iframeStyle = window.innerWidth > 768 ? 'width: 1000px;' : 'width: 100%;';
-        resultsContainer.innerHTML = `<iframe src="${embedUrl}" style="${iframeStyle} height: 100%; border: none;" allowfullscreen></iframe>`;
-        resultsContainer.style.height = "500px";  // Set a specific height for the container
-    }
 
     async function updateEpisodeDropdown(id) {
         const season = document.getElementById(`seasonSelect${id}`).value;
