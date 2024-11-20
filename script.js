@@ -1,3 +1,38 @@
+// Dark mode and settings functionality
+const darkModeToggle = document.getElementById('darkModeToggle');
+const settingsBtn = document.querySelector('.settings-btn');
+const settingsDropdown = document.querySelector('.settings-dropdown');
+
+// Initialize dark mode from localStorage
+if (localStorage.getItem('darkMode') === 'enabled') {
+    document.body.classList.add('dark-mode');
+    darkModeToggle.checked = true;
+}
+
+// Dark mode toggle
+darkModeToggle.addEventListener('change', () => {
+    if (darkModeToggle.checked) {
+        document.body.classList.add('dark-mode');
+        localStorage.setItem('darkMode', 'enabled');
+    } else {
+        document.body.classList.remove('dark-mode');
+        localStorage.setItem('darkMode', 'disabled');
+    }
+});
+
+// Settings dropdown toggle
+settingsBtn.addEventListener('click', (e) => {
+    e.stopPropagation();
+    settingsDropdown.classList.toggle('active');
+});
+
+// Close dropdown when clicking outside
+document.addEventListener('click', (e) => {
+    if (!settingsDropdown.contains(e.target)) {
+        settingsDropdown.classList.remove('active');
+    }
+});
+
 document.getElementById('searchBtn').addEventListener('click', async function () {
     const query = document.getElementById('searchInput').value;
     const resultsContainer = document.getElementById('resultsContainer');

@@ -5,11 +5,22 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Media Box</title>
     <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
 </head>
 <body>
     <header>
         <h1>Media Box</h1>
         <p>Discover and Watch Movies, TV Shows, and Anime</p>
+        <div class="settings-dropdown">
+            <button class="settings-btn"><i class="fas fa-cog"></i></button>
+            <div class="dropdown-content">
+                <label class="dark-mode-toggle">
+                    Dark Mode
+                    <input type="checkbox" id="darkModeToggle">
+                    <span class="slider"></span>
+                </label>
+            </div>
+        </div>
     </header>
 
     <div class="search-container">

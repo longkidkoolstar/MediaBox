@@ -14,6 +14,30 @@ body {
     min-height: 100vh;
 }
 
+body.dark-mode {
+    background-color: #1a1a1a;
+    color: #ffffff;
+}
+
+body.dark-mode h1 {
+    color: #2ecc71;
+}
+
+body.dark-mode p {
+    color: #bdc3c7;
+}
+
+body.dark-mode input[type="text"] {
+    background-color: #2d2d2d;
+    color: #ffffff;
+    border-color: #444;
+}
+
+body.dark-mode .media-item {
+    background-color: #2d2d2d;
+    border-color: #444;
+}
+
 header {
     margin-top: 20px;
     text-align: center;
@@ -86,7 +110,7 @@ button:hover {
 .media-item h3 {
     margin-top: 10px;
     font-size: 1.2em;
-    color: #2c3e50;
+    color: #ffffff;
 }
 
 .media-item button {
@@ -117,4 +141,86 @@ footer {
     color: #fff;
     width: 100%;
     text-align: center;
+}
+
+.settings-dropdown {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    z-index: 1000;
+}
+
+.settings-btn {
+    background: none;
+    border: none;
+    font-size: 24px;
+    cursor: pointer;
+    color: #1abc9c;
+    padding: 10px;
+}
+
+body.dark-mode .settings-btn {
+    color: #2ecc71;
+}
+
+.dropdown-content {
+    display: none;
+    position: absolute;
+    right: 0;
+    background-color: #fff;
+    min-width: 200px;
+    box-shadow: 0 8px 16px rgba(0,0,0,0.1);
+    border-radius: 8px;
+    padding: 10px;
+}
+
+body.dark-mode .dropdown-content {
+    background-color: #2d2d2d;
+    box-shadow: 0 8px 16px rgba(0,0,0,0.3);
+}
+
+.settings-dropdown.active .dropdown-content {
+    display: block;
+}
+
+.dark-mode-toggle {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px;
+    cursor: pointer;
+}
+
+.dark-mode-toggle input {
+    display: none;
+}
+
+.slider {
+    position: relative;
+    display: inline-block;
+    width: 40px;
+    height: 20px;
+    background-color: #ccc;
+    border-radius: 20px;
+    transition: 0.3s;
+}
+
+.slider:before {
+    content: "";
+    position: absolute;
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    background-color: white;
+    top: 2px;
+    left: 2px;
+    transition: 0.3s;
+}
+
+input:checked + .slider {
+    background-color: #2ecc71;
+}
+
+input:checked + .slider:before {
+    transform: translateX(20px);
 }
