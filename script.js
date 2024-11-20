@@ -71,6 +71,11 @@ document.getElementById('searchBtn').addEventListener('click', async function ()
             `;
         
             resultsContainer.appendChild(mediaItem);
+            
+            // Populate episodes dropdown initially for TV shows
+            if (item.media_type === 'tv') {
+                updateEpisodeDropdown(item.id);
+            }
         });
         
     } catch (error) {
@@ -110,6 +115,7 @@ async function updateEpisodeDropdown(id) {
     // Update episodes based on the selected season
     // Fetch the number of episodes for the selected season dynamically
     // This is an example. You can dynamically fetch the number of episodes for each season using the TMDB API.
+    const apiKey = '1d21d96347d1b72f32806b6256c3a132';  // Your TMDB API key
     const episodeUrl = `https://api.themoviedb.org/3/tv/${id}/season/${season}?api_key=${apiKey}`;
     const episodeResponse = await fetch(episodeUrl);
     const episodeData = await episodeResponse.json();
@@ -121,4 +127,3 @@ async function updateEpisodeDropdown(id) {
         episodeSelect.innerHTML += `<option value="${i}">Episode ${i}</option>`;
     }
 }
-
