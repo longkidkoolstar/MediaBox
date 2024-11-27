@@ -226,6 +226,141 @@ class UserManager {
     }
 }
 
+// Featured content management
+class FeaturedContent {
+    constructor() {
+        this.featuredSection = document.querySelector('.featured-section');
+        this.currentIndex = 0;
+        this.rotationInterval = 10000; // 10 seconds
+        this.apiKey = '1d21d96347d1b72f32806b6256c3a132';  // TMDB API key
+
+        // Initialize content arrays
+        this.popularMovies = [];
+        this.trendingShows = [];
+        this.latestAnime = [];
+        
+        // Start content rotation
+        this.startContentRotation();
+    }
+
+    async fetchTMDBContent() {
+        try {
+            // Fetch popular movies
+            const moviesResponse = await fetch(
+                `https://api.themoviedb.org/3/movie/popular?api_key=${this.apiKey}&language=en-US&page=1`
+            );
+            const moviesData = await moviesResponse.json();
+            this.popularMovies = moviesData.results.slice(0, 8).map(movie => ({
+                id: movie.id,
+                title: movie.title,
+                type: 'movie',
+                image: `https://image.tmdb.org/t/p/w500${movie.poster_path}`,
+                rating: movie.vote_average
+            }));
+
+            // Fetch trending TV shows
+            const showsResponse = await fetch(
+                `https://api.themoviedb.org/3/tv/popular?api_key=${this.apiKey}&language=en-US&page=1`
+            );
+            const showsData = await showsResponse.json();
+            this.trendingShows = showsData.results.slice(0, 8).map(show => ({
+                id: show.id,
+                title: show.name,
+                type: 'tv',
+                image: `https://image.tmdb.org/t/p/w500${show.poster_path}`,
+                rating: show.vote_average
+            }));
+
+            // For anime, we'll use a specific keyword search
+            const animeResponse = await fetch(
+                `https://api.themoviedb.org/3/search/tv?api_key=${this.apiKey}&language=en-US&page=1&query=anime&with_keywords=210024`
+            );
+            const animeData = await animeResponse.json();
+            this.latestAnime = animeData.results.slice(0, 8).map(anime => ({
+                id: anime.id,
+                title: anime.name,
+                type: 'anime',
+                image: `https://image.tmdb.org/t/p/w500${anime.poster_path}`,
+                rating: anime.vote_average
+            }));
+
+            // Update the display
+            this.populateFeaturedContent();
+        } catch (error) {
+            console.error('Error fetching content:', error);
+        }
+    }
+
+    createMediaCard(item) {
+        return `
+            <div class="media-card" data-id="${item.id}" data-type="${item.type}" onclick="handleMediaClick('${item.type}', ${item.id}, '${item.title.replace(/'/g, "\\'")}')">
+                <img src="${item.image}" alt="${item.title}" loading="lazy">
+                <div class="media-title">${item.title}</div>
+                <div class="media-rating">★ ${item.rating.toFixed(1)}</div>
+            </div>
+        `;
+    }
+
+    populateFeaturedContent() {
+        const popularMoviesContainer = document.getElementById('popularMovies');
+        const trendingShowsContainer = document.getElementById('trendingShows');
+        const latestAnimeContainer = document.getElementById('latestAnime');
+
+        if (popularMoviesContainer) {
+            popularMoviesContainer.innerHTML = this.popularMovies.map(movie => this.createMediaCard(movie)).join('');
+        }
+        if (trendingShowsContainer) {
+            trendingShowsContainer.innerHTML = this.trendingShows.map(show => this.createMediaCard(show)).join('');
+        }
+        if (latestAnimeContainer) {
+            latestAnimeContainer.innerHTML = this.latestAnime.map(anime => this.createMediaCard(anime)).join('');
+        }
+    }
+
+    startContentRotation() {
+        // Initial fetch
+        this.fetchTMDBContent();
+
+        // Set up periodic content refresh
+        setInterval(() => {
+            this.fetchTMDBContent();
+        }, this.rotationInterval);
+    }
+
+    hide() {
+        if (this.featuredSection) {
+            this.featuredSection.style.display = 'none';
+        }
+    }
+
+    show() {
+        if (this.featuredSection) {
+            this.featuredSection.style.display = 'block';
+        }
+    }
+}
+
+// Global media click handler
+function handleMediaClick(type, id, title) {
+    if (window.featuredContent) {
+        window.featuredContent.hide();
+    }
+
+    switch (type) {
+        case 'movie':
+            playMedia(`https://www.2embed.cc/embed/${id}`);
+            break;
+        case 'tv':
+            playTvShow(id);
+            break;
+        case 'anime':
+            playAnime(title);
+            break;
+        default:
+            console.error('Unknown media type:', type);
+    }
+}
+
 // Global media player functions
 window.playTvShow = function(id) {
     const season = document.getElementById('seasonSelect').value;
@@ -254,6 +389,9 @@ document.addEventListener('DOMContentLoaded', async () => {
     // Initialize user manager
     const userManager = new UserManager();
     await userManager.initialize();
+
+    // Initialize featured content
+    window.featuredContent = new FeaturedContent();
 
     // Set up dark mode toggle
     const darkModeToggle = document.getElementById('darkModeToggle');
@@ -307,10 +445,12 @@ document.addEventListener('DOMContentLoaded', async () => {
         const resultsContainer = document.getElementById('resultsContainer');
 
         if (query.trim() === '') {
-            alert('Please enter a search query.');
+            window.featuredContent.show();
+            resultsContainer.innerHTML = '';
             return;
         }
 
+        window.featuredContent.hide();
         resultsContainer.innerHTML = '';  // Clear previous results
 
         const apiKey = '1d21d96347d1b72f32806b6256c3a132';  // Your TMDB API key
