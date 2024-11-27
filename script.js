@@ -363,8 +363,8 @@ function handleMediaClick(type, id, title) {
 
 // Global media player functions
 window.playTvShow = function(id) {
-    const season = document.getElementById('seasonSelect').value;
-    const episode = document.getElementById('episodeSelect').value;
+    const season = document.getElementById(`seasonSelect${id}`).value;
+    const episode = document.getElementById(`episodeSelect${id}`).value;
     const embedUrl = `https://www.2embed.cc/embedtv/${id}&s=${season}&e=${episode}`;
     const resultsContainer = document.getElementById('resultsContainer');
     const iframeStyle = window.innerWidth > 768 ? 'width: 1000px;' : 'width: 100%;';
