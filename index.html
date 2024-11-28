@@ -10,8 +10,42 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <meta name="description" content="Discover and watch your favorite movies, TV shows, and anime all in one place">
+    <style>
+        .js-loading {
+            visibility: hidden;
+        }
+        
+        /* Default light theme variables */
+        :root {
+            --background-color: var(--background-light);
+            --text-color: var(--text-light);
+        }
+        
+        /* Dark theme variables */
+        :root[data-theme="dark"] {
+            --background-color: var(--background-dark);
+            --text-color: var(--text-dark);
+        }
+        
+        /* Apply theme colors immediately */
+        body {
+            background-color: var(--background-color);
+            color: var(--text-color);
+            transition: none;
+        }
+    </style>
+    <script>
+        // Initialize theme before page load
+        (function() {
+            const darkMode = localStorage.getItem('darkMode') === 'true';
+            if (darkMode) {
+                document.documentElement.setAttribute('data-theme', 'dark');
+                document.body.classList.add('dark-mode');
+            }
+        })();
+    </script>
 </head>
-<body>
+<body class="js-loading">
     <!-- Auth Modal -->
     <div id="authModal" class="modal">
         <div class="modal-content">

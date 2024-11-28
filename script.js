@@ -195,13 +195,15 @@ class UserManager {
 
         if (darkModeToggle) {
             darkModeToggle.addEventListener('change', () => {
-                document.body.classList.toggle('dark-mode', darkModeToggle.checked);
+                const isDarkMode = darkModeToggle.checked;
+                document.body.classList.toggle('dark-mode', isDarkMode);
+                document.documentElement.setAttribute('data-theme', isDarkMode ? 'dark' : 'light');
+                localStorage.setItem('darkMode', isDarkMode);
+                
                 if (this.currentUser) {
                     this.updateUserSettings({
-                        darkMode: darkModeToggle.checked
+                        darkMode: isDarkMode
                     });
-                } else {
-                    localStorage.setItem('darkMode', darkModeToggle.checked);
                 }
             });
         }
@@ -291,6 +293,7 @@ class UserManager {
         if (darkModeToggle) {
             darkModeToggle.checked = localStorage.getItem('darkMode') === 'true';
             document.body.classList.toggle('dark-mode', darkModeToggle.checked);
+            document.documentElement.setAttribute('data-theme', darkModeToggle.checked ? 'dark' : 'light');
         }
     }
 
@@ -301,6 +304,7 @@ class UserManager {
             if (darkModeToggle) {
                 darkModeToggle.checked = this.currentUser.settings.darkMode;
                 document.body.classList.toggle('dark-mode', this.currentUser.settings.darkMode);
+                document.documentElement.setAttribute('data-theme', this.currentUser.settings.darkMode ? 'dark' : 'light');
             }
 
             // Apply video source settings
@@ -595,8 +599,10 @@ document.addEventListener('DOMContentLoaded', async () => {
             }
             if (darkModeToggle.checked) {
                 document.body.classList.add('dark-mode');
+                document.documentElement.setAttribute('data-theme', 'dark');
             } else {
                 document.body.classList.remove('dark-mode');
+                document.documentElement.setAttribute('data-theme', 'light');
             }
             localStorage.setItem('darkMode', darkModeToggle.checked);
         });
@@ -619,6 +625,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             darkModeToggle.checked = userSettings.darkMode;
             if (userSettings.darkMode) {
                 document.body.classList.add('dark-mode');
+                document.documentElement.setAttribute('data-theme', 'dark');
             }
         }
     }
@@ -643,6 +650,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 if (darkModeToggle) {
                     darkModeToggle.checked = false;
                     document.body.classList.remove('dark-mode');
+                    document.documentElement.setAttribute('data-theme', 'light');
                     localStorage.setItem('darkMode', false);
                 }
 
@@ -729,7 +737,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                         const tvShowUrl = `https://api.themoviedb.org/3/tv/${item.id}?api_key=${apiKey}`;
                         const tvShowResponse = await fetch(tvShowUrl);
                         const tvShowData = await tvShowResponse.json();
-        
+
                         const numSeasons = tvShowData.number_of_seasons;
         
                         seasonDropdown = `<select id="seasonSelect${item.id}" onchange="updateEpisodeDropdown(${item.id})">`;
@@ -747,7 +755,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                         const animeShowUrl = `https://api.themoviedb.org/3/tv/${item.id}?api_key=${apiKey}`;
                         const animeShowResponse = await fetch(animeShowUrl);
                         const animeShowData = await animeShowResponse.json();
-        
+
                         const animeSeasons = animeShowData.number_of_seasons;
         
                         seasonDropdown = `<select id="seasonSelect${item.id}" onchange="updateEpisodeDropdown(${item.id})">`;
@@ -802,4 +810,13 @@ document.addEventListener('DOMContentLoaded', async () => {
             episodeSelect.innerHTML += `<option value="${i}">Episode ${i}</option>`;
         }
     }
+});
+
+// Remove loading class and enable transitions once everything is loaded
+window.addEventListener('load', function() {
+    // Small delay to ensure dark mode is properly applied
+    setTimeout(() => {
+        document.body.style.transition = 'background-color 0.3s, color 0.3s';
+        document.body.classList.remove('js-loading');
+    }, 50);
 });
