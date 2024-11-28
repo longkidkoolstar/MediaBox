@@ -7,12 +7,15 @@ class UserManager {
     constructor() {
         this.currentUser = null;
         this.users = [];
+        this.initialized = false;
     }
 
     async initialize() {
         await this.loadUsers();
         await this.restoreSession();
         this.setupAuthUI();
+        this.setupSettingsUI();
+        this.initialized = true;
     }
 
     async loadUsers() {
@@ -142,6 +145,8 @@ class UserManager {
                 password,
                 settings: {
                     darkMode: false,
+                    movieSource: 'vidsrc.dev',
+                    tvSource: 'vidsrc.dev',
                     lastUpdated: new Date().toISOString()
                 }
             };
@@ -166,48 +171,169 @@ class UserManager {
         });
     }
 
+    setupSettingsUI() {
+        const darkModeToggle = document.getElementById('darkModeToggle');
+        const movieSourceSelect = document.getElementById('movieSourceSelect');
+        const tvSourceSelect = document.getElementById('tvSourceSelect');
+        const resetSettingsBtn = document.getElementById('resetSettingsBtn');
+
+        // Load saved settings from localStorage for non-logged-in users
+        if (!this.currentUser) {
+            if (movieSourceSelect) {
+                const savedMovieSource = localStorage.getItem('movieSource');
+                if (savedMovieSource) {
+                    movieSourceSelect.value = savedMovieSource;
+                }
+            }
+            if (tvSourceSelect) {
+                const savedTvSource = localStorage.getItem('tvSource');
+                if (savedTvSource) {
+                    tvSourceSelect.value = savedTvSource;
+                }
+            }
+        }
+
+        if (darkModeToggle) {
+            darkModeToggle.addEventListener('change', () => {
+                document.body.classList.toggle('dark-mode', darkModeToggle.checked);
+                if (this.currentUser) {
+                    this.updateUserSettings({
+                        darkMode: darkModeToggle.checked
+                    });
+                } else {
+                    localStorage.setItem('darkMode', darkModeToggle.checked);
+                }
+            });
+        }
+
+        if (movieSourceSelect) {
+            movieSourceSelect.addEventListener('change', () => {
+                if (this.currentUser) {
+                    this.updateUserSettings({
+                        movieSource: movieSourceSelect.value
+                    });
+                } else {
+                    localStorage.setItem('movieSource', movieSourceSelect.value);
+                }
+            });
+        }
+
+        if (tvSourceSelect) {
+            tvSourceSelect.addEventListener('change', () => {
+                if (this.currentUser) {
+                    this.updateUserSettings({
+                        tvSource: tvSourceSelect.value
+                    });
+                } else {
+                    localStorage.setItem('tvSource', tvSourceSelect.value);
+                }
+            });
+        }
+
+        if (resetSettingsBtn) {
+            resetSettingsBtn.addEventListener('click', () => {
+                this.resetSettings();
+            });
+        }
+    }
+
     login(user, saveToStorage = true) {
         this.currentUser = user;
         const authButton = document.getElementById('authButton');
         const userDropdown = document.getElementById('userDropdown');
         const usernameSpan = document.getElementById('username');
 
-        authButton.textContent = user.username;
-        usernameSpan.textContent = user.email;
+        if (authButton) authButton.textContent = user.username;
+        if (usernameSpan) usernameSpan.textContent = user.username;
+        if (userDropdown) userDropdown.style.display = 'none';
+
+        // Apply user settings and clear localStorage
         this.applyUserSettings();
         
+        // Clear localStorage settings since we're using user account settings now
+        localStorage.removeItem('movieSource');
+        localStorage.removeItem('tvSource');
+        localStorage.removeItem('darkMode');
+
         if (saveToStorage) {
             this.saveSession();
         }
     }
 
     logout() {
+        // Save current settings to localStorage before logout
+        if (this.currentUser?.settings) {
+            localStorage.setItem('movieSource', this.currentUser.settings.movieSource || 'vidsrc.dev');
+            localStorage.setItem('tvSource', this.currentUser.settings.tvSource || 'vidsrc.dev');
+            localStorage.setItem('darkMode', this.currentUser.settings.darkMode || false);
+        }
+
         this.currentUser = null;
         const authButton = document.getElementById('authButton');
         const userDropdown = document.getElementById('userDropdown');
 
-        authButton.textContent = 'Sign In';
-        userDropdown.style.display = 'none';
-        this.resetSettings();
-        this.saveSession(); // This will remove the session from localStorage
+        if (authButton) authButton.textContent = 'Sign In';
+        if (userDropdown) userDropdown.style.display = 'none';
+
+        this.saveSession();
+        
+        // Re-apply settings from localStorage
+        const movieSourceSelect = document.getElementById('movieSourceSelect');
+        const tvSourceSelect = document.getElementById('tvSourceSelect');
+        const darkModeToggle = document.getElementById('darkModeToggle');
+
+        if (movieSourceSelect) {
+            movieSourceSelect.value = localStorage.getItem('movieSource') || 'vidsrc.dev';
+        }
+        if (tvSourceSelect) {
+            tvSourceSelect.value = localStorage.getItem('tvSource') || 'vidsrc.dev';
+        }
+        if (darkModeToggle) {
+            darkModeToggle.checked = localStorage.getItem('darkMode') === 'true';
+            document.body.classList.toggle('dark-mode', darkModeToggle.checked);
+        }
     }
 
     applyUserSettings() {
         if (this.currentUser && this.currentUser.settings) {
+            // Apply dark mode
             const darkModeToggle = document.getElementById('darkModeToggle');
-            darkModeToggle.checked = this.currentUser.settings.darkMode;
-            if (this.currentUser.settings.darkMode) {
-                document.body.classList.add('dark-mode');
-            } else {
-                document.body.classList.remove('dark-mode');
+            if (darkModeToggle) {
+                darkModeToggle.checked = this.currentUser.settings.darkMode;
+                document.body.classList.toggle('dark-mode', this.currentUser.settings.darkMode);
+            }
+
+            // Apply video source settings
+            const movieSourceSelect = document.getElementById('movieSourceSelect');
+            const tvSourceSelect = document.getElementById('tvSourceSelect');
+            
+            if (movieSourceSelect) {
+                movieSourceSelect.value = this.currentUser.settings.movieSource || 'vidsrc.dev';
+            }
+            if (tvSourceSelect) {
+                tvSourceSelect.value = this.currentUser.settings.tvSource || 'vidsrc.dev';
             }
         }
     }
 
     resetSettings() {
-        const darkModeToggle = document.getElementById('darkModeToggle');
-        darkModeToggle.checked = false;
-        document.body.classList.remove('dark-mode');
+        const defaultSettings = {
+            darkMode: false,
+            movieSource: 'vidsrc.dev',
+            tvSource: 'vidsrc.dev',
+            lastUpdated: new Date().toISOString()
+        };
+
+        if (this.currentUser) {
+            this.currentUser.settings = defaultSettings;
+            this.saveUsers();
+        } else {
+            localStorage.setItem('darkMode', 'false');
+            localStorage.setItem('movieSource', 'vidsrc.dev');
+            localStorage.setItem('tvSource', 'vidsrc.dev');
+        }
+
+        this.applyUserSettings();
     }
 
     async updateUserSettings(settings) {
@@ -225,6 +351,99 @@ class UserManager {
         }
     }
 }
+
+// Create a global userManager instance
+window.userManager = new UserManager();
+
+// Global media player functions
+window.playTvShow = function(id, season = null, episode = null) {
+    if (!id) return;
+    
+    // Convert id to string to ensure we can use string methods
+    id = String(id);
+    
+    // If season and episode are not provided, try to get them from the dropdowns
+    if (!season && !episode) {
+        const seasonSelect = document.getElementById(`seasonSelect${id}`);
+        const episodeSelect = document.getElementById(`episodeSelect${id}`);
+        if (seasonSelect && episodeSelect) {
+            season = seasonSelect.value;
+            episode = episodeSelect.value;
+        }
+    }
+    
+    // Get source from user settings or localStorage
+    const source = window.userManager?.currentUser?.settings?.tvSource || 
+                  localStorage.getItem('tvSource') || 
+                  'vidsrc.dev';
+    
+    let embedUrl;
+    switch (source) {
+        case 'vidsrc.to':
+            embedUrl = `https://vidsrc.to/embed/tv/${id}`;
+            if (season) embedUrl += `/${season}`;
+            if (episode) embedUrl += `/${episode}`;
+            break;
+        case '2embed':
+            // Check if it's an IMDb ID (starts with 'tt')
+            if (id.startsWith('tt')) {
+                if (season && episode) {
+                    embedUrl = `https://www.2embed.cc/embedtv/${id}&s=${season}&e=${episode}`;
+                } else {
+                    embedUrl = `https://www.2embed.cc/embedtvfull/${id}`;
+                }
+            } else {
+                // Assume it's a TMDB ID
+                if (season && episode) {
+                    embedUrl = `https://www.2embed.cc/embedtv/${id}&s=${season}&e=${episode}`;
+                } else {
+                    embedUrl = `https://www.2embed.cc/embedtvfull/${id}`;
+                }
+            }
+            break;
+        default: // vidsrc.dev
+            embedUrl = `https://vidsrc.xyz/embed/tv/${id}`;
+            if (season) embedUrl += `/${season}`;
+            if (episode) embedUrl += `/${episode}`;
+            break;
+    }
+    
+    playMedia(embedUrl);
+};
+
+window.playMovie = function(id) {
+    if (!id) return;
+    
+    // Convert id to string to ensure we can use string methods
+    id = String(id);
+    
+    // Get source from user settings or localStorage
+    const source = window.userManager?.currentUser?.settings?.movieSource || 
+                  localStorage.getItem('movieSource') || 
+                  'vidsrc.dev';
+    
+    let embedUrl;
+    switch (source) {
+        case 'vidsrc.to':
+            embedUrl = `https://vidsrc.to/embed/movie/${id}`;
+            break;
+        case '2embed':
+            embedUrl = `https://www.2embed.cc/embed/${id}`;
+            break;
+        default: // vidsrc.dev
+            embedUrl = `https://vidsrc.xyz/embed/movie/${id}`;
+            break;
+    }
+    
+    playMedia(embedUrl);
+};
+
+window.playMedia = function(embedUrl) {
+    const resultsContainer = document.getElementById('resultsContainer');
+    const iframeStyle = window.innerWidth > 768 ? 'width: 1000px;' : 'width: 100%;';
+    resultsContainer.innerHTML = `<iframe src="${embedUrl}" style="${iframeStyle} height: 100%; border: none;" allowfullscreen></iframe>`;
+    resultsContainer.style.height = "500px";  // Set a specific height for the container
+};
 
 // Featured content management
 class FeaturedContent {
@@ -359,41 +578,10 @@ function handleMediaClick(type, id, title) {
     }
 }
 
-// Global media player functions
-window.playTvShow = function(id) {
-    const season = document.getElementById(`seasonSelect${id}`).value;
-    const episode = document.getElementById(`episodeSelect${id}`).value;
-    const useVidSrc = document.getElementById('videoSourceToggle').checked;
-    
-    const embedUrl = useVidSrc 
-        ? `https://vidsrc.dev/embed/tv/${id}/${season}/${episode}`
-        : `https://www.2embed.cc/embedtv/${id}&s=${season}&e=${episode}`;
-    
-    window.playMedia(embedUrl);
-};
-
-window.playMovie = function(id) {
-    const useVidSrc = document.getElementById('videoSourceToggle').checked;
-    
-    const embedUrl = useVidSrc
-        ? `https://vidsrc.dev/embed/movie/${id}`
-        : `https://www.2embed.cc/embed/${id}`;
-    
-    window.playMedia(embedUrl);
-};
-
-window.playMedia = function(embedUrl) {
-    const resultsContainer = document.getElementById('resultsContainer');
-    const iframeStyle = window.innerWidth > 768 ? 'width: 1000px;' : 'width: 100%;';
-    resultsContainer.innerHTML = `<iframe src="${embedUrl}" style="${iframeStyle} height: 100%; border: none;" allowfullscreen></iframe>`;
-    resultsContainer.style.height = "500px";  // Set a specific height for the container
-};
-
 // Initialize everything after DOM is loaded
 document.addEventListener('DOMContentLoaded', async () => {
     // Initialize user manager
-    const userManager = new UserManager();
-    await userManager.initialize();
+    await window.userManager.initialize();
 
     // Initialize featured content
     window.featuredContent = new FeaturedContent();
@@ -402,8 +590,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     const darkModeToggle = document.getElementById('darkModeToggle');
     if (darkModeToggle) {
         darkModeToggle.addEventListener('change', () => {
-            if (userManager.currentUser) {
-                userManager.updateUserSettings({ darkMode: darkModeToggle.checked });
+            if (window.userManager.currentUser) {
+                window.userManager.updateUserSettings({ darkMode: darkModeToggle.checked });
             }
             if (darkModeToggle.checked) {
                 document.body.classList.add('dark-mode');
@@ -417,13 +605,14 @@ document.addEventListener('DOMContentLoaded', async () => {
     // Initialize user settings
     const userSettings = {
         darkMode: localStorage.getItem('darkMode') === 'true',
-        useVidSrc: localStorage.getItem('useVidSrc') !== 'false',
+        movieSource: localStorage.getItem('movieSource') || 'vidsrc.dev',
+        tvSource: localStorage.getItem('tvSource') || 'vidsrc.dev',
         lastUpdated: new Date().toISOString()
     };
 
     // Load settings when page loads
-    if (userManager.currentUser) {
-        userManager.applyUserSettings();
+    if (window.userManager.currentUser) {
+        window.userManager.applyUserSettings();
     } else {
         const darkModeToggle = document.getElementById('darkModeToggle');
         if (darkModeToggle) {
@@ -435,12 +624,13 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     // Video source toggle functionality
-    const videoSourceToggle = document.getElementById('videoSourceToggle');
-    if (videoSourceToggle) {
-        videoSourceToggle.checked = userSettings.useVidSrc;
-        videoSourceToggle.addEventListener('change', () => {
-            localStorage.setItem('useVidSrc', videoSourceToggle.checked);
-        });
+    const movieSourceSelect = document.getElementById('movieSourceSelect');
+    const tvSourceSelect = document.getElementById('tvSourceSelect');
+    if (movieSourceSelect) {
+        movieSourceSelect.value = userSettings.movieSource;
+    }
+    if (tvSourceSelect) {
+        tvSourceSelect.value = userSettings.tvSource;
     }
 
     // Reset settings functionality
@@ -457,16 +647,23 @@ document.addEventListener('DOMContentLoaded', async () => {
                 }
 
                 // Reset video source
-                const videoSourceToggle = document.getElementById('videoSourceToggle');
-                if (videoSourceToggle) {
-                    videoSourceToggle.checked = true;
-                    localStorage.setItem('useVidSrc', true);
+                const movieSourceSelect = document.getElementById('movieSourceSelect');
+                const tvSourceSelect = document.getElementById('tvSourceSelect');
+                if (movieSourceSelect) {
+                    movieSourceSelect.value = 'vidsrc.dev';
+                    localStorage.setItem('movieSource', 'vidsrc.dev');
+                }
+                if (tvSourceSelect) {
+                    tvSourceSelect.value = 'vidsrc.dev';
+                    localStorage.setItem('tvSource', 'vidsrc.dev');
                 }
 
                 // Reset user settings if logged in
-                if (userManager.currentUser) {
-                    userManager.updateUserSettings({
+                if (window.userManager.currentUser) {
+                    window.userManager.updateUserSettings({
                         darkMode: false,
+                        movieSource: 'vidsrc.dev',
+                        tvSource: 'vidsrc.dev',
                         lastUpdated: new Date().toISOString()
                     });
                 }

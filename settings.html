@@ -20,8 +20,19 @@
     </div>
 
     <header>
-        <button class="back-button" onclick="window.location.href='/'"><i class="fas fa-arrow-left"></i> Back</button>
-        <a href="/" class="home-link"><h1>Media Box</h1></a>
+        <script>
+            function getBaseUrl() {
+                if (window.location.protocol === 'file:') {
+                    // Local file system
+                    return 'index.html';
+                } else {
+                    // Hosted environment (like GitHub Pages)
+                    return window.location.pathname.split('/').slice(0, -1).join('/') || '/';
+                }
+            }
+        </script>
+        <button class="back-button" onclick="window.location.href = getBaseUrl()"><i class="fas fa-arrow-left"></i> Back</button>
+        <a href="javascript:window.location.href = getBaseUrl()" class="home-link"><h1>Media Box</h1></a>
         <p>Settings</p>
     </header>
 
@@ -43,14 +54,26 @@
             <section class="settings-section">
                 <h2>Video Source</h2>
                 <div class="setting-item">
-                    <label class="setting-label">
-                        Use VidSrc
-                        <div class="toggle-wrapper">
-                            <input type="checkbox" id="videoSourceToggle" checked>
-                            <span class="slider"></span>
-                        </div>
+                    <label class="setting-label" for="movieSourceSelect">
+                        Movie Source
+                        <select id="movieSourceSelect" class="source-select">
+                            <option value="vidsrc.dev">VidSrc.dev</option>
+                            <option value="vidsrc.to">VidSrc.to</option>
+                            <option value="2embed">2embed</option>
+                        </select>
                     </label>
-                    <p class="setting-description">Switch between different video source providers</p>
+                    <p class="setting-description">Choose video source provider for movies</p>
+                </div>
+                <div class="setting-item">
+                    <label class="setting-label" for="tvSourceSelect">
+                        TV Show Source
+                        <select id="tvSourceSelect" class="source-select">
+                            <option value="vidsrc.dev">VidSrc.dev</option>
+                            <option value="vidsrc.to">VidSrc.to</option>
+                            <option value="2embed">2embed</option>
+                        </select>
+                    </label>
+                    <p class="setting-description">Choose video source provider for TV shows</p>
                 </div>
             </section>
 
@@ -91,5 +114,72 @@
     </div>
 
     <script src="script.js"></script>
+    <script>
+        // Wait for userManager to be initialized before setting up dropdowns
+        async function initializeSettings() {
+            // Wait for userManager to be available and initialized
+            while (!window.userManager?.initialized) {
+                await new Promise(resolve => setTimeout(resolve, 100));
+            }
+
+            const movieSourceSelect = document.getElementById('movieSourceSelect');
+            const tvSourceSelect = document.getElementById('tvSourceSelect');
+            
+            // Function to handle source selection change
+            function handleSourceChange(type, value) {
+                if (window.userManager?.currentUser) {
+                    // User is logged in, update their settings
+                    const settings = {};
+                    settings[type] = value;
+                    window.userManager.updateUserSettings(settings);
+                } else {
+                    // User is not logged in, use localStorage
+                    localStorage.setItem(type, value);
+                }
+            }
+
+            // Set up change event listeners
+            if (movieSourceSelect) {
+                movieSourceSelect.addEventListener('change', function() {
+                    handleSourceChange('movieSource', this.value);
+                });
+            }
+            
+            if (tvSourceSelect) {
+                tvSourceSelect.addEventListener('change', function() {
+                    handleSourceChange('tvSource', this.value);
+                });
+            }
+
+            // Initialize values based on login status
+            if (window.userManager?.currentUser?.settings) {
+                // User is logged in, use their settings
+                const userSettings = window.userManager.currentUser.settings;
+                if (movieSourceSelect && userSettings.movieSource) {
+                    movieSourceSelect.value = userSettings.movieSource;
+                }
+                if (tvSourceSelect && userSettings.tvSource) {
+                    tvSourceSelect.value = userSettings.tvSource;
+                }
+            } else {
+                // User is not logged in, use localStorage
+                if (movieSourceSelect) {
+                    const savedMovieSource = localStorage.getItem('movieSource');
+                    if (savedMovieSource) {
+                        movieSourceSelect.value = savedMovieSource;
+                    }
+                }
+                if (tvSourceSelect) {
+                    const savedTvSource = localStorage.getItem('tvSource');
+                    if (savedTvSource) {
+                        tvSourceSelect.value = savedTvSource;
+                    }
+                }
+            }
+        }
+
+        // Start initialization when DOM is loaded
+        document.addEventListener('DOMContentLoaded', initializeSettings);
+    </script>
 </body>
 </html>
