@@ -400,20 +400,24 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     // Set up dark mode toggle
     const darkModeToggle = document.getElementById('darkModeToggle');
-    darkModeToggle.addEventListener('change', () => {
-        if (userManager.currentUser) {
-            userManager.updateUserSettings({ darkMode: darkModeToggle.checked });
-        }
-        if (darkModeToggle.checked) {
-            document.body.classList.add('dark-mode');
-        } else {
-            document.body.classList.remove('dark-mode');
-        }
-    });
+    if (darkModeToggle) {
+        darkModeToggle.addEventListener('change', () => {
+            if (userManager.currentUser) {
+                userManager.updateUserSettings({ darkMode: darkModeToggle.checked });
+            }
+            if (darkModeToggle.checked) {
+                document.body.classList.add('dark-mode');
+            } else {
+                document.body.classList.remove('dark-mode');
+            }
+            localStorage.setItem('darkMode', darkModeToggle.checked);
+        });
+    }
 
     // Initialize user settings
     const userSettings = {
-        darkMode: false,
+        darkMode: localStorage.getItem('darkMode') === 'true',
+        useVidSrc: localStorage.getItem('useVidSrc') !== 'false',
         lastUpdated: new Date().toISOString()
     };
 
@@ -422,40 +426,61 @@ document.addEventListener('DOMContentLoaded', async () => {
         userManager.applyUserSettings();
     } else {
         const darkModeToggle = document.getElementById('darkModeToggle');
-        darkModeToggle.checked = userSettings.darkMode;
-        if (userSettings.darkMode) {
-            document.body.classList.add('dark-mode');
+        if (darkModeToggle) {
+            darkModeToggle.checked = userSettings.darkMode;
+            if (userSettings.darkMode) {
+                document.body.classList.add('dark-mode');
+            }
         }
     }
 
-    // Dark mode and settings functionality
-    const settingsBtn = document.querySelector('.settings-btn');
-    const settingsDropdown = document.querySelector('.settings-dropdown');
+    // Video source toggle functionality
     const videoSourceToggle = document.getElementById('videoSourceToggle');
-
-    // Load video source preference
-    const savedVideoSource = localStorage.getItem('useVidSrc');
-    if (savedVideoSource !== null) {
-        videoSourceToggle.checked = savedVideoSource === 'true';
+    if (videoSourceToggle) {
+        videoSourceToggle.checked = userSettings.useVidSrc;
+        videoSourceToggle.addEventListener('change', () => {
+            localStorage.setItem('useVidSrc', videoSourceToggle.checked);
+        });
     }
 
-    // Save video source preference when changed
-    videoSourceToggle.addEventListener('change', () => {
-        localStorage.setItem('useVidSrc', videoSourceToggle.checked);
-    });
+    // Reset settings functionality
+    const resetSettingsBtn = document.getElementById('resetSettingsBtn');
+    if (resetSettingsBtn) {
+        resetSettingsBtn.addEventListener('click', () => {
+            if (confirm('Are you sure you want to reset all settings to default?')) {
+                // Reset dark mode
+                const darkModeToggle = document.getElementById('darkModeToggle');
+                if (darkModeToggle) {
+                    darkModeToggle.checked = false;
+                    document.body.classList.remove('dark-mode');
+                    localStorage.setItem('darkMode', false);
+                }
 
-    // Settings dropdown toggle
-    settingsBtn.addEventListener('click', (e) => {
-        e.stopPropagation();
-        settingsDropdown.classList.toggle('active');
-    });
+                // Reset video source
+                const videoSourceToggle = document.getElementById('videoSourceToggle');
+                if (videoSourceToggle) {
+                    videoSourceToggle.checked = true;
+                    localStorage.setItem('useVidSrc', true);
+                }
 
-    // Close dropdown when clicking outside
-    document.addEventListener('click', (e) => {
-        if (!settingsDropdown.contains(e.target)) {
-            settingsDropdown.classList.remove('active');
-        }
-    });
+                // Reset user settings if logged in
+                if (userManager.currentUser) {
+                    userManager.updateUserSettings({
+                        darkMode: false,
+                        lastUpdated: new Date().toISOString()
+                    });
+                }
+            }
+        });
+    }
+
+    // Add settings link to header
+    const settingsBtn = document.querySelector('.settings-btn');
+    if (settingsBtn) {
+        settingsBtn.addEventListener('click', () => {
+            window.location.href = 'settings.html';
+        });
+    }
 
     document.getElementById('searchBtn').addEventListener('click', async function () {
         const query = document.getElementById('searchInput').value;
