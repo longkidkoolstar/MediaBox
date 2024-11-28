@@ -348,13 +348,11 @@ function handleMediaClick(type, id, title) {
 
     switch (type) {
         case 'movie':
-            playMedia(`https://www.2embed.cc/embed/${id}`);
+            playMovie(id);
             break;
         case 'tv':
-            playTvShow(id);
-            break;
         case 'anime':
-            playAnime(title);
+            playTvShow(id);
             break;
         default:
             console.error('Unknown media type:', type);
@@ -365,15 +363,22 @@ function handleMediaClick(type, id, title) {
 window.playTvShow = function(id) {
     const season = document.getElementById(`seasonSelect${id}`).value;
     const episode = document.getElementById(`episodeSelect${id}`).value;
-    const embedUrl = `https://www.2embed.cc/embedtv/${id}&s=${season}&e=${episode}`;
-    const resultsContainer = document.getElementById('resultsContainer');
-    const iframeStyle = window.innerWidth > 768 ? 'width: 1000px;' : 'width: 100%;';
-    resultsContainer.innerHTML = `<iframe src="${embedUrl}" style="${iframeStyle} height: 100%; border: none;" allowfullscreen></iframe>`;
-    resultsContainer.style.height = "500px";  // Set a specific height for the container
+    const useVidSrc = document.getElementById('videoSourceToggle').checked;
+    
+    const embedUrl = useVidSrc 
+        ? `https://vidsrc.dev/embed/tv/${id}/${season}/${episode}`
+        : `https://www.2embed.cc/embedtv/${id}&s=${season}&e=${episode}`;
+    
+    window.playMedia(embedUrl);
 };
 
-window.playAnime = function(title) {
-    const embedUrl = `https://2anime.xyz/embed/${title.replace(/\s+/g, '-').toLowerCase()}-1`;
+window.playMovie = function(id) {
+    const useVidSrc = document.getElementById('videoSourceToggle').checked;
+    
+    const embedUrl = useVidSrc
+        ? `https://vidsrc.dev/embed/movie/${id}`
+        : `https://www.2embed.cc/embed/${id}`;
+    
     window.playMedia(embedUrl);
 };
 
@@ -426,6 +431,18 @@ document.addEventListener('DOMContentLoaded', async () => {
     // Dark mode and settings functionality
     const settingsBtn = document.querySelector('.settings-btn');
     const settingsDropdown = document.querySelector('.settings-dropdown');
+    const videoSourceToggle = document.getElementById('videoSourceToggle');
+
+    // Load video source preference
+    const savedVideoSource = localStorage.getItem('useVidSrc');
+    if (savedVideoSource !== null) {
+        videoSourceToggle.checked = savedVideoSource === 'true';
+    }
+
+    // Save video source preference when changed
+    videoSourceToggle.addEventListener('change', () => {
+        localStorage.setItem('useVidSrc', videoSourceToggle.checked);
+    });
 
     // Settings dropdown toggle
     settingsBtn.addEventListener('click', (e) => {
@@ -482,8 +499,8 @@ document.addEventListener('DOMContentLoaded', async () => {
         
                 switch (item.media_type) {
                     case 'movie':
-                        embedUrl = `https://www.2embed.cc/embed/${item.id}`;
-                        playButton = `<button onclick="window.playMedia('${embedUrl}')">Watch Now</button>`;
+                        embedUrl = document.getElementById('videoSourceToggle').checked ? `https://vidsrc.dev/embed/movie/${item.id}` : `https://www.2embed.cc/embed/${item.id}`;
+                        playButton = `<button onclick="window.playMovie(${item.id})">Watch Now</button>`;
                         break;
                     case 'tv':
                         // Fetch the number of seasons and episodes dynamically
@@ -501,9 +518,25 @@ document.addEventListener('DOMContentLoaded', async () => {
         
                         episodeDropdown = `<select id="episodeSelect${item.id}"></select>`;
         
-                        playButton = isAnime 
-                            ? `<button onclick="window.playAnime('${item.title}')">Watch Now</button>` 
-                            : `<button onclick="window.playTvShow('${item.id}')">Watch Now</button>`;
+                        playButton = `<button onclick="window.playTvShow(${item.id})">Watch Now</button>`;
+                        break;
+                    case 'anime':
+                        // Handle anime the same way as TV shows
+                        const animeShowUrl = `https://api.themoviedb.org/3/tv/${item.id}?api_key=${apiKey}`;
+                        const animeShowResponse = await fetch(animeShowUrl);
+                        const animeShowData = await animeShowResponse.json();
+        
+                        const animeSeasons = animeShowData.number_of_seasons;
+        
+                        seasonDropdown = `<select id="seasonSelect${item.id}" onchange="updateEpisodeDropdown(${item.id})">`;
+                        for (let i = 1; i <= animeSeasons; i++) {
+                            seasonDropdown += `<option value="${i}">Season ${i}</option>`;
+                        }
+                        seasonDropdown += `</select>`;
+        
+                        episodeDropdown = `<select id="episodeSelect${item.id}"></select>`;
+        
+                        playButton = `<button onclick="window.playTvShow(${item.id})">Watch Now</button>`;
                         break;
                 }
         
@@ -517,7 +550,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 resultsContainer.appendChild(mediaItem);
                 
                 // Populate episodes dropdown initially for TV shows
-                if (item.media_type === 'tv') {
+                if (item.media_type === 'tv' || item.media_type === 'anime') {
                     updateEpisodeDropdown(item.id);
                 }
             });

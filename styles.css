@@ -210,7 +210,8 @@ button:hover {
     display: block;
 }
 
-.dark-mode-toggle {
+.dark-mode-toggle,
+.video-source-toggle {
     display: flex;
     align-items: center;
     justify-content: space-between;
@@ -218,11 +219,13 @@ button:hover {
     cursor: pointer;
 }
 
-.dark-mode-toggle input {
+.dark-mode-toggle input,
+.video-source-toggle input {
     display: none;
 }
 
-.slider {
+.dark-mode-toggle .slider,
+.video-source-toggle .slider {
     position: relative;
     display: inline-block;
     width: 40px;
@@ -232,7 +235,8 @@ button:hover {
     transition: 0.3s;
 }
 
-.slider:before {
+.dark-mode-toggle .slider:before,
+.video-source-toggle .slider:before {
     content: "";
     position: absolute;
     width: 16px;
@@ -250,6 +254,14 @@ input:checked + .slider {
 
 input:checked + .slider:before {
     transform: translateX(20px);
+}
+
+.video-source-toggle {
+    border-top: 1px solid #eee;
+}
+
+body.dark-mode .video-source-toggle {
+    border-top-color: #444;
 }
 
 .featured-section {
