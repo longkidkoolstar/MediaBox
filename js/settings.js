@@ -68,8 +68,8 @@ class SettingsManager {
         }
 
         if (this.videoSourceToggle) {
-            const useVidSrc = localStorage.getItem('useVidSrc') !== 'false';
-            this.videoSourceToggle.checked = useVidSrc;
+            const movieSource = localStorage.getItem('movieSource') || 'vidsrc.dev';
+            this.videoSourceToggle.checked = movieSource === 'vidsrc.dev';
         }
     }
 
@@ -92,7 +92,8 @@ class SettingsManager {
             await window.userManager.saveUsers();
         } else {
             localStorage.setItem('darkMode', settings.darkMode);
-            localStorage.setItem('useVidSrc', this.videoSourceToggle?.checked);
+            localStorage.setItem('movieSource', settings.movieSource);
+            localStorage.setItem('tvSource', settings.tvSource);
         }
 
         // Dispatch event for other modules
