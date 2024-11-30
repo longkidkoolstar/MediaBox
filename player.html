@@ -1,0 +1,360 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Media Player - Media Box</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        .player-container {
+            width: 100%;
+            height: calc(100vh - 200px);
+            margin: 20px 0;
+            background: #000;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .player-container iframe {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            border: none;
+            background: #000;
+        }
+
+        .iframe-wrapper {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: #000;
+        }
+
+        .controls {
+            padding: 20px;
+            background: var(--background-color);
+            border-radius: 8px;
+            margin: 20px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        .episode-controls {
+            display: flex;
+            gap: 15px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        select {
+            padding: 8px 12px;
+            border-radius: 4px;
+            border: 1px solid var(--border-color);
+            background: var(--background-color);
+            color: var(--text-color);
+            font-size: 14px;
+            min-width: 120px;
+        }
+
+        select:focus {
+            outline: none;
+            border-color: var(--primary-color);
+        }
+
+        .episode-controls button {
+            padding: 8px 16px;
+            border: none;
+            border-radius: 4px;
+            background: var(--primary-color);
+            color: white;
+            cursor: pointer;
+            transition: background-color 0.2s;
+            font-weight: 500;
+        }
+
+        .episode-controls button:hover {
+            background: var(--primary-color-dark);
+        }
+
+        .media-title {
+            margin: 0 0 15px 0;
+            font-size: 1.5em;
+            color: var(--text-color);
+        }
+
+        .loading {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: white;
+            font-size: 1.2em;
+        }
+
+        /* Back button styles */
+        .back-button {
+            position: absolute;
+            left: 2rem;
+            top: 2rem;
+            background: none;
+            border: none;
+            color: var(--primary-color);
+            font-size: 1rem;
+            padding: 0.5rem 1rem;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            transition: transform 0.2s ease;
+        }
+
+        .back-button:hover {
+            transform: translateX(-4px);
+        }
+
+        .back-button i {
+            font-size: 1.2rem;
+        }
+
+        body.dark-mode .back-button {
+            color: #2ecc71;
+        }
+
+        @media screen and (max-width: 768px) {
+            .back-button {
+                left: 1rem;
+                top: 1rem;
+                font-size: 0.875rem;
+            }
+
+            .back-button i {
+                font-size: 1rem;
+            }
+        }
+
+
+        @media (max-width: 768px) {
+            .player-container {
+                height: calc(100vh - 300px);
+            }
+
+            .episode-controls {
+                flex-direction: column;
+                align-items: stretch;
+            }
+
+            select, button {
+                width: 100%;
+            }
+        }
+    </style>
+</head>
+<body class="js-loading">
+    <header>
+        <a href="./index.html" class="home-link"><h1>Media Box</h1></a>
+        <div class="settings-dropdown">
+            <a href="settings.html"><button class="settings-btn" aria-label="Settings" title="Settings"><i class="fas fa-cog"></i></button></a>
+        </div>
+    </header>
+
+    <main>
+        <div class="controls">
+            <button class="back-button" onclick="history.back()">
+                <i class="fas fa-arrow-left"></i>
+                Back
+            </button>
+            <h2 id="mediaTitle" class="media-title">Loading...</h2>
+            <div class="episode-controls" id="episodeControls" style="display: none;">
+                <select id="seasonSelect" aria-label="Select Season">
+                    <option value="">Loading seasons...</option>
+                </select>
+                <select id="episodeSelect" aria-label="Select Episode">
+                    <option value="">Select a season first</option>
+                </select>
+                <button id="playEpisodeBtn">Play Episode</button>
+            </div>
+        </div>
+
+        <div class="player-container" id="playerContainer">
+            <div class="loading">Loading media player...</div>
+        </div>
+    </main>
+
+    <script>
+        // Create a function to load scripts in order
+        function loadScript(src) {
+            return new Promise((resolve, reject) => {
+                const script = document.createElement('script');
+                script.src = src;
+                script.onload = resolve;
+                script.onerror = reject;
+                document.body.appendChild(script);
+            });
+        }
+
+        // Prevent navigation on errors
+        window.addEventListener('error', function(event) {
+            event.preventDefault();
+            console.error('Error:', event.error);
+            return false;
+        });
+
+        // Prevent unload if not intentional
+        let isIntentionalUnload = false;
+        window.addEventListener('beforeunload', function(event) {
+            if (!isIntentionalUnload) {
+                event.preventDefault();
+                event.returnValue = '';
+            }
+        });
+
+        // Load and initialize everything
+        async function initializeAll() {
+            try {
+                // Load scripts in order
+                await loadScript('js/auth.js');
+                await loadScript('js/settings.js');
+                await loadScript('js/player.js');
+
+                // Initialize managers
+                await userManager.initialize();
+                settingsManager.initialize();
+                
+                // Initialize player and check if successful
+                const playerContainer = document.getElementById('playerContainer');
+                if (!playerContainer) {
+                    throw new Error('Player container not found');
+                }
+                
+                if (!mediaPlayer.initialize('playerContainer')) {
+                    throw new Error('Failed to initialize media player');
+                }
+
+                // Parse URL parameters
+                const urlParams = new URLSearchParams(window.location.search);
+                const mediaType = urlParams.get('type');
+                const mediaId = urlParams.get('id');
+                const season = urlParams.get('season');
+                const episode = urlParams.get('episode');
+
+                if (!mediaType || !mediaId) {
+                    throw new Error('Missing required parameters: type and id');
+                }
+
+                // Fetch media details
+                const apiKey = '1d21d96347d1b72f32806b6256c3a132';
+                const endpoint = mediaType === 'tv' 
+                    ? `https://api.themoviedb.org/3/tv/${mediaId}`
+                    : `https://api.themoviedb.org/3/movie/${mediaId}`;
+
+                const response = await fetch(`${endpoint}?api_key=${apiKey}`);
+                if (!response.ok) {
+                    throw new Error('Failed to fetch media details');
+                }
+                const data = await response.json();
+
+                // Update title
+                const mediaTitle = document.getElementById('mediaTitle');
+                mediaTitle.textContent = data.name || data.title;
+
+                // Setup TV show controls
+                if (mediaType === 'tv') {
+                    const episodeControls = document.getElementById('episodeControls');
+                    const seasonSelect = document.getElementById('seasonSelect');
+                    const episodeSelect = document.getElementById('episodeSelect');
+                    const playEpisodeBtn = document.getElementById('playEpisodeBtn');
+
+                    if (!episodeControls || !seasonSelect || !episodeSelect || !playEpisodeBtn) {
+                        throw new Error('Required TV show controls not found');
+                    }
+
+                    // Show controls
+                    episodeControls.style.display = 'flex';
+
+                    // Populate seasons
+                    seasonSelect.innerHTML = data.seasons
+                        .map(s => `<option value="${s.season_number}">Season ${s.season_number}</option>`)
+                        .join('');
+
+                    // Set initial season
+                    if (season) seasonSelect.value = season;
+
+                    // Function to update episodes
+                    async function updateEpisodes(seasonNum) {
+                        const seasonResponse = await fetch(
+                            `https://api.themoviedb.org/3/tv/${mediaId}/season/${seasonNum}?api_key=${apiKey}`
+                        );
+                        if (!seasonResponse.ok) {
+                            throw new Error('Failed to fetch season details');
+                        }
+                        const seasonData = await seasonResponse.json();
+                        
+                        episodeSelect.innerHTML = seasonData.episodes
+                            .map(ep => `<option value="${ep.episode_number}">Episode ${ep.episode_number}: ${ep.name}</option>`)
+                            .join('');
+
+                        if (episode) episodeSelect.value = episode;
+                    }
+
+                    // Update episodes when season changes
+                    seasonSelect.addEventListener('change', () => {
+                        updateEpisodes(seasonSelect.value).catch(error => {
+                            console.error('Error updating episodes:', error);
+                            episodeSelect.innerHTML = '<option value="">Failed to load episodes</option>';
+                        });
+                    });
+
+                    // Initial episode load
+                    await updateEpisodes(seasonSelect.value);
+
+                    // Play episode button
+                    playEpisodeBtn.addEventListener('click', () => {
+                        const selectedSeason = seasonSelect.value;
+                        const selectedEpisode = episodeSelect.value;
+                        if (selectedSeason && selectedEpisode) {
+                            // Update URL without reloading
+                            const newUrl = new URL(window.location);
+                            newUrl.searchParams.set('season', selectedSeason);
+                            newUrl.searchParams.set('episode', selectedEpisode);
+                            window.history.pushState({}, '', newUrl);
+                            
+                            mediaPlayer.playTvShow(mediaId, selectedSeason, selectedEpisode);
+                        }
+                    });
+
+                    // Play initial episode
+                    mediaPlayer.playTvShow(mediaId, season || 1, episode || 1);
+                } else if (mediaType === 'movie') {
+                    mediaPlayer.playMovie(mediaId);
+                }
+
+                // Remove loading class
+                document.body.classList.remove('js-loading');
+            } catch (error) {
+                console.error('Error initializing player:', error);
+                document.getElementById('mediaTitle').textContent = `Error: ${error.message}`;
+                document.querySelector('.loading').textContent = 'Error loading media player';
+                document.body.classList.remove('js-loading');
+            }
+        }
+
+        // Initialize when DOM is loaded
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', initializeAll);
+        } else {
+            initializeAll();
+        }
+
+        // Handle back/forward navigation
+        window.addEventListener('popstate', function() {
+            isIntentionalUnload = true;
+            location.reload();
+        });
+    </script>
+</body>
+</html>
