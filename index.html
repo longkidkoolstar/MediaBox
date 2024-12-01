@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Media Box</title>
-    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="css/styles.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -33,16 +33,22 @@
             color: var(--text-color);
             transition: none;
         }
+        
+        /* Update inline styles to match CSS dark mode implementation */
+        body.dark-mode {
+            background-color: var(--background-dark);
+            color: var(--text-dark);
+        }
     </style>
     <script>
         // Initialize theme before page load
-        (function() {
+        document.addEventListener('DOMContentLoaded', function() {
             const darkMode = localStorage.getItem('darkMode') === 'true';
             if (darkMode) {
                 document.documentElement.setAttribute('data-theme', 'dark');
                 document.body.classList.add('dark-mode');
             }
-        })();
+        });
     </script>
 </head>
 <body class="js-loading">
@@ -88,16 +94,6 @@
         <div class="settings-dropdown">
             <a href="settings.html"><button class="settings-btn" aria-label="Settings" title="Settings"><i class="fas fa-cog"></i></button></a>
             <div class="dropdown-content">
-                <label class="dark-mode-toggle">
-                    Dark Mode
-                    <input type="checkbox" id="darkModeToggle">
-                    <span class="slider"></span>
-                </label>
-                <label class="video-source-toggle">
-                    Use VidSrc
-                    <input type="checkbox" id="videoSourceToggle" checked>
-                    <span class="slider"></span>
-                </label>
             </div>
         </div>
     </header>
