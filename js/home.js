@@ -126,70 +126,20 @@ function handleMediaClick(type, id, title) {
 }
 
 // Setup search functionality
-document.getElementById('searchBtn')?.addEventListener('click', async function() {
-    const query = document.getElementById('searchInput')?.value;
-    const resultsContainer = document.getElementById('resultsContainer');
-
-    if (!query || !resultsContainer) return;
-
-    if (query.trim() === '') {
-        window.featuredContent.show();
-        resultsContainer.innerHTML = '';
-        return;
+document.getElementById('searchBtn')?.addEventListener('click', function() {
+    const query = document.getElementById('searchInput')?.value.trim();
+    if (query) {
+        window.location.href = `search.html?q=${encodeURIComponent(query)}`;
     }
+});
 
-    window.featuredContent.hide();
-    resultsContainer.innerHTML = '<div class="loading">Searching...</div>';
-
-    const apiKey = '1d21d96347d1b72f32806b6256c3a132';
-    const searchUrl = `https://api.themoviedb.org/3/search/multi?api_key=${apiKey}&query=${encodeURIComponent(query)}`;
-
-    try {
-        const response = await fetch(searchUrl);
-        const data = await response.json();
-
-        if (data.results.length === 0) {
-            resultsContainer.innerHTML = '<p class="no-results">No results found.</p>';
-            return;
+// Add enter key support for search
+document.getElementById('searchInput')?.addEventListener('keypress', function(e) {
+    if (e.key === 'Enter') {
+        const query = this.value.trim();
+        if (query) {
+            window.location.href = `search.html?q=${encodeURIComponent(query)}`;
         }
-
-        resultsContainer.innerHTML = '';
-        const validResults = data.results.filter(item => 
-            (item.media_type === 'movie' || item.media_type === 'tv') && 
-            (item.poster_path || item.backdrop_path)
-        );
-
-        validResults.forEach(item => {
-            // Mark as anime if it's a TV show with animation genre
-            const isAnime = item.media_type === 'tv' && item.genre_ids?.includes(16);
-            const mediaType = isAnime ? 'anime' : item.media_type;
-            
-            const mediaCard = document.createElement('div');
-            mediaCard.className = 'media-card';
-            
-            const posterPath = item.poster_path 
-                ? `https://image.tmdb.org/t/p/w500${item.poster_path}`
-                : `https://image.tmdb.org/t/p/w500${item.backdrop_path}`;
-
-            mediaCard.innerHTML = `
-                <img src="${posterPath}" alt="${item.title || item.name}" loading="lazy">
-                <div class="media-title">${item.title || item.name}</div>
-                <div class="media-info">
-                    <div class="media-type">${mediaType.toUpperCase()}</div>
-                    <div class="media-rating">★ ${item.vote_average?.toFixed(1) || 'N/A'}</div>
-                </div>
-            `;
-
-            mediaCard.addEventListener('click', () => {
-                handleMediaClick(mediaType, item.id, item.title || item.name);
-            });
-
-            resultsContainer.appendChild(mediaCard);
-        });
-
-    } catch (error) {
-        console.error('Error searching:', error);
-        resultsContainer.innerHTML = '<p class="error">Something went wrong. Please try again.</p>';
     }
 });
 
