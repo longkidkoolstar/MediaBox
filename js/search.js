@@ -128,7 +128,7 @@ class SearchPage {
         }
 
         this.resultsContainer.innerHTML = results.map(item => `
-            <div class="media-card" onclick="searchPage.handleMediaClick('${item.type}', ${item.id}, '${item.title.replace(/'/g, "\\'")}')">
+            <div class="media-card" onclick="window.searchPage.handleMediaClick('${item.type}', ${item.id}, '${item.title.replace(/'/g, "\\'")}')">
                 <img src="${item.image}" alt="${item.title}" loading="lazy">
                 <div class="media-year">${item.year || 'N/A'}</div>
                 <div class="media-info">
@@ -154,15 +154,19 @@ class SearchPage {
             loginBtn.textContent = 'Logout';
         }
     }
-}
 
-// Handle media click (same as in home.js)
-function handleMediaClick(type, id, title) {
-    // Store the selected media info
-    localStorage.setItem('selectedMedia', JSON.stringify({ type, id, title }));
-    
-    // Redirect to the media page
-    window.location.href = `media.html?type=${type}&id=${id}`;
+    // Handle media click
+    handleMediaClick(type, id, title) {
+        // Store the selected media info
+        localStorage.setItem('selectedMedia', JSON.stringify({ type, id, title }));
+        
+        // Treat anime as TV shows for playback
+        if (type === 'tv' || type === 'anime') {
+            window.location.href = `player.html?type=tv&id=${id}&season=1&episode=1`;
+        } else {
+            window.location.href = `player.html?type=${type}&id=${id}`;
+        }
+    }
 }
 
 // Initialize search page
