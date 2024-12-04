@@ -100,61 +100,13 @@ p {
 }
 
 .search-container {
-    margin: 2rem auto;
-    display: flex;
-    gap: 0.75rem;
-    justify-content: center;
-    align-items: center;
-    width: 90%;
-    max-width: 600px;
-    padding: 0 1rem;
-}
-
-input[type="text"] {
-    padding: 1rem 1.5rem;
-    font-size: 1rem;
-    width: 100%;
-    border-radius: 12px;
-    border: 2px solid #e2e8f0;
-    background-color: var(--card-light);
-    transition: all 0.2s ease;
-}
-
-input[type="text"]:focus {
-    outline: none;
-    border: 2px solid var(--primary-color);
-    background-color: var(--card-light);
-    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
-}
-
-button#searchBtn {
-    padding: 1rem 2rem;
-    background-color: var(--primary-color);
-    color: white;
-    border: none;
-    cursor: pointer;
-    font-size: 1rem;
-    border-radius: 12px;
-    font-weight: 600;
-    transition: all 0.2s ease;
-    white-space: nowrap;
-    min-width: 120px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-}
-
-button#searchBtn:hover {
-    background-color: var(--primary-hover);
-    transform: translateY(-1px);
-}
-
-main {
-    width: 100%;
-    max-width: 1800px;
-    padding: 0 1rem;
     margin: 0 auto;
-    overflow-x: hidden;
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    max-width: 100%;
+    padding: 0;
+    z-index: 30;
 }
 
 .search-header {
@@ -1193,17 +1145,15 @@ body.dark-mode .user-dropdown {
     width: 100%;
     border-radius: 12px;
     border: 2px solid var(--border);
-    background-color: rgba(255, 255, 255, 0.05);
+    background-color: var(--card);
     transition: all 0.2s ease;
     color: var(--text);
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
 #searchInput:focus {
     outline: none;
-    border: 2px solid var(--primary-color);
-    background-color: var(--card);
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
 }
 
 button#searchBtn {
