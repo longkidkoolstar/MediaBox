@@ -76,6 +76,9 @@ class UserManager {
 
         if (!authModal || !authButton) return;
 
+        // Update UI based on current user state
+        this.updateAuthUI();
+
         authButton.addEventListener('click', () => {
             if (this.currentUser) {
                 userDropdown.style.display = userDropdown.style.display === 'none' ? 'block' : 'none';
@@ -86,6 +89,15 @@ class UserManager {
 
         closeBtn?.addEventListener('click', () => {
             authModal.style.display = 'none';
+        });
+
+        window.addEventListener('click', (e) => {
+            if (e.target === authModal) {
+                authModal.style.display = 'none';
+            }
+            if (!e.target.closest('.user-menu')) {
+                userDropdown.style.display = 'none';
+            }
         });
 
         authTabs.forEach(tab => {
@@ -102,14 +114,14 @@ class UserManager {
 
         signinForm?.addEventListener('submit', async (e) => {
             e.preventDefault();
-            const email = signinForm.querySelector('input[type="email"]').value;
-            const password = signinForm.querySelector('input[type="password"]').value;
-
+            const email = e.target.querySelector('input[type="email"]').value;
+            const password = e.target.querySelector('input[type="password"]').value;
+            
             const user = this.users.find(u => u.email === email && u.password === password);
             if (user) {
                 this.login(user);
                 authModal.style.display = 'none';
-                signinForm.reset();
+                e.target.reset();
             } else {
                 alert('Invalid email or password');
             }
@@ -117,10 +129,10 @@ class UserManager {
 
         signupForm?.addEventListener('submit', async (e) => {
             e.preventDefault();
-            const username = signupForm.querySelector('input[type="text"]').value;
-            const email = signupForm.querySelector('input[type="email"]').value;
-            const password = signupForm.querySelector('input[type="password"]').value;
-            const confirmPassword = signupForm.querySelectorAll('input[type="password"]')[1].value;
+            const username = e.target.querySelector('input[type="text"]').value;
+            const email = e.target.querySelector('input[type="email"]').value;
+            const password = e.target.querySelector('input[type="password"]').value;
+            const confirmPassword = e.target.querySelectorAll('input[type="password"]')[1].value;
 
             if (password !== confirmPassword) {
                 alert('Passwords do not match');
@@ -133,67 +145,80 @@ class UserManager {
             }
 
             const newUser = {
-                id: Date.now().toString(),
+                id: crypto.randomUUID(),
                 username,
                 email,
-                password,
-                settings: {
-                    darkMode: false,
-                    movieSource: 'vidsrc.dev',
-                    tvSource: 'vidsrc.dev',
-                    lastUpdated: new Date().toISOString()
-                }
+                password
             };
 
             this.users.push(newUser);
             await this.saveUsers();
             this.login(newUser);
             authModal.style.display = 'none';
-            signupForm.reset();
+            e.target.reset();
         });
 
         logoutButton?.addEventListener('click', () => {
             this.logout();
         });
-
-        document.addEventListener('click', (e) => {
-            if (userDropdown && !userDropdown.contains(e.target) && e.target !== authButton) {
-                userDropdown.style.display = 'none';
-            }
-        });
     }
 
-    login(user, saveToStorage = true) {
-        this.currentUser = user;
-        if (saveToStorage) {
-            this.saveSession();
-        }
+    updateAuthUI() {
         const authButton = document.getElementById('authButton');
         const userDropdown = document.getElementById('userDropdown');
         const usernameSpan = document.getElementById('username');
-        
-        if (authButton && userDropdown && usernameSpan) {
-            authButton.textContent = user.username;
-            usernameSpan.textContent = user.username;
+
+        // Skip UI updates if elements don't exist
+        if (!authButton && !userDropdown && !usernameSpan) {
+            return;
         }
 
-        // Dispatch event for other modules
+        if (this.currentUser) {
+            if (authButton) {
+                authButton.textContent = this.currentUser.username;
+                authButton.classList.add('logged-in');
+            }
+            if (usernameSpan) {
+                usernameSpan.textContent = this.currentUser.username;
+            }
+            if (userDropdown) {
+                userDropdown.style.display = 'none';
+            }
+        } else {
+            if (authButton) {
+                authButton.textContent = 'Sign In';
+                authButton.classList.remove('logged-in');
+            }
+            if (userDropdown) {
+                userDropdown.style.display = 'none';
+            }
+        }
+    }
+
+    getCurrentUser() {
+        return this.currentUser;
+    }
+
+    login(user, saveSession = true) {
+        this.currentUser = user;
+        if (saveSession) {
+            this.saveSession();
+        }
+        this.updateAuthUI();
+        // Dispatch login event
         window.dispatchEvent(new CustomEvent('userLogin', { detail: user }));
     }
 
     logout() {
         this.currentUser = null;
-        this.saveSession();
-        const authButton = document.getElementById('authButton');
-        const userDropdown = document.getElementById('userDropdown');
-        
-        if (authButton && userDropdown) {
-            authButton.textContent = 'Sign In';
-            userDropdown.style.display = 'none';
-        }
-
-        // Dispatch event for other modules
+        localStorage.removeItem('currentUserId');
+        this.updateAuthUI();
+        // Dispatch logout event
         window.dispatchEvent(new CustomEvent('userLogout'));
+        // Only reload if we're not in the player
+        if (!window.location.pathname.includes('player.html')) {
+            window.location.reload();
+        }
     }
 }
 

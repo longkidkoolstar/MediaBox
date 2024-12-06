@@ -128,15 +128,18 @@ class SearchPage {
         }
 
         this.resultsContainer.innerHTML = results.map(item => `
-            <div class="media-card" onclick="window.searchPage.handleMediaClick('${item.type}', ${item.id}, '${item.title.replace(/'/g, "\\'")}')">
-                <img src="${item.image}" alt="${item.title}" loading="lazy">
-                <div class="media-year">${item.year || 'N/A'}</div>
-                <div class="media-info">
-                    <div class="media-type">${item.type.toUpperCase()}</div>
-                    <h3 class="media-title">${item.title}</h3>
-                    <div class="media-rating">
-                        <i class="fas fa-star"></i>
-                        ${item.rating ? item.rating.toFixed(1) : 'N/A'}
+            <div class="media-card">
+                ${window.favoritesManager?.createFavoriteButton(item.id) || ''}
+                <div class="media-content" onclick="window.searchPage.handleMediaClick('${item.type}', ${item.id}, '${item.title.replace(/'/g, "\\'")}')">
+                    <img src="${item.image}" alt="${item.title}" loading="lazy">
+                    <div class="media-year">${item.year || 'N/A'}</div>
+                    <div class="media-info">
+                        <div class="media-type">${item.type.toUpperCase()}</div>
+                        <h3 class="media-title">${item.title}</h3>
+                        <div class="media-rating">
+                            <i class="fas fa-star"></i>
+                            ${item.rating ? item.rating.toFixed(1) : 'N/A'}
+                        </div>
                     </div>
                 </div>
             </div>
@@ -168,6 +171,18 @@ class SearchPage {
         }
     }
 }
+
+document.addEventListener('DOMContentLoaded', async function() {
+    const darkMode = localStorage.getItem('darkMode') === 'true';
+    if (darkMode) {
+        document.documentElement.setAttribute('data-theme', 'dark');
+    }
+    // Initialize auth and settings
+    await userManager.initialize();
+    settingsManager.initialize();
+    favoritesManager.initialize();
+    document.body.classList.remove('js-loading');
+});
 
 // Initialize search page
 window.searchPage = new SearchPage();

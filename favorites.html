@@ -3,18 +3,18 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Media Box</title>
+    <title>My Favorites - Media Box</title>
     <link rel="stylesheet" href="css/styles.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-    <meta name="description" content="Discover and watch your favorite movies, TV shows, and anime all in one place">
+    <meta name="description" content="View and manage your favorite movies, TV shows, and anime">
     <style>
         .js-loading {
             visibility: hidden;
         }
-        
+
         /* Default light theme variables */
         :root {
             --background-color: var(--background-light);
@@ -33,22 +33,16 @@
             color: var(--text-color);
             transition: none;
         }
-        
-        /* Update inline styles to match CSS dark mode implementation */
-        body.dark-mode {
-            background-color: var(--background-dark);
-            color: var(--text-dark);
-        }
     </style>
     <script>
         // Initialize theme before page load
-        document.addEventListener('DOMContentLoaded', function() {
+        (function() {
             const darkMode = localStorage.getItem('darkMode') === 'true';
             if (darkMode) {
                 document.documentElement.setAttribute('data-theme', 'dark');
                 document.body.classList.add('dark-mode');
             }
-        });
+        })();
     </script>
 </head>
 <body class="js-loading">
@@ -89,61 +83,84 @@
     </div>
 
     <header>
+        <button class="back-button" onclick="history.back()" style="color: #2ecc71;"><i class="fas fa-arrow-left" style="color: #2ecc71;"></i> Back</button>
         <a href="./index.html" class="home-link"><h1>Media Box</h1></a>
-        <p>Your ultimate destination for movies, TV shows, and anime</p>
         <div class="settings-dropdown">
             <a href="settings.html"><button class="settings-btn" aria-label="Settings" title="Settings"><i class="fas fa-cog"></i></button></a>
-            <div class="dropdown-content">
-            </div>
         </div>
     </header>
 
     <main>
-        <div class="search-container">
-            <input type="text" id="searchInput" placeholder="Search movies, TV shows, or anime..." aria-label="Search">
-            <button id="searchBtn">Search</button>
-        </div>
-
-        <section class="featured-section">
-            <h2>Featured Content</h2>
-            <div class="featured-grid">
-                <div class="featured-item">
-                    <div class="featured-content">
-                        <h3>Popular Movies</h3>
-                        <div id="popularMovies" class="content-grid"></div>
-                    </div>
-                </div>
-                <div class="featured-item">
-                    <div class="featured-content">
-                        <h3>Trending TV Shows</h3>
-                        <div id="trendingShows" class="content-grid"></div>
-                    </div>
-                </div>
-                <div class="featured-item">
-                    <div class="featured-content">
-                        <h3>Latest Anime</h3>
-                        <div id="latestAnime" class="content-grid"></div>
-                    </div>
-                </div>
+        <section class="favorites-section">
+            <h2>My Favorites</h2>
+            <div id="favoritesGrid" class="favorites-grid">
+                <!-- Favorites will be populated here -->
             </div>
         </section>
-
-        <div id="resultsContainer" class="results-container"></div>
     </main>
 
     <script src="js/auth.js"></script>
     <script src="js/settings.js"></script>
-    <script src="js/player.js"></script>
     <script src="js/favorites.js"></script>
-    <script src="js/home.js"></script>
     <script>
-        // Initialize all modules
-        window.addEventListener('DOMContentLoaded', async () => {
-            await userManager.initialize();
-            settingsManager.initialize();
-            favoritesManager.initialize();
-            // Featured content already initialized
-        });
+        class FavoritesPage {
+            constructor() {
+                this.favoritesGrid = document.getElementById('favoritesGrid');
+            }
+
+            async initialize() {
+                await userManager.initialize();
+                await favoritesManager.initialize();
+                this.displayFavorites();
+                this.setupEventListeners();
+            }
+
+            createMediaCard(item) {
+                return `
+                    <div class="media-card" data-id="${item.id}" data-media-type="${item.type}">
+                        ${favoritesManager.createFavoriteButton(item.id)}
+                        <div class="media-content" onclick="location.href='player.html?type=${item.type}&id=${item.id}'">
+                            <img src="${item.poster}" alt="${item.title}" loading="lazy">
+                            <div class="media-title">${item.title}</div>
+                        </div>
+                    </div>
+                `;
+            }
+
+            displayFavorites() {
+                const favorites = favoritesManager.getAllFavorites();
+                if (favorites.length > 0) {
+                    this.favoritesGrid.innerHTML = favorites.map(item => this.createMediaCard(item)).join('');
+                } else {
+                    this.favoritesGrid.innerHTML = '<p class="no-favorites">No favorites yet. Go to the home page and click the heart icon on any media to add it to your favorites!</p>';
+                }
+            }
+
+            setupEventListeners() {
+                // Refresh favorites display when items are added/removed
+                document.addEventListener('click', (e) => {
+                    if (e.target.closest('.favorite-btn')) {
+                        setTimeout(() => this.displayFavorites(), 100);
+                    }
+                });
+
+                // Listen for dark mode changes
+                window.addEventListener('themeChange', (e) => {
+                    const isDarkMode = e.detail.darkMode;
+                    if (isDarkMode) {
+                        document.documentElement.setAttribute('data-theme', 'dark');
+                        document.body.classList.add('dark-mode');
+                    } else {
+                        document.documentElement.removeAttribute('data-theme');
+                        document.body.classList.remove('dark-mode');
+                    }
+                });
+            }
+        }
+
+        // Initialize the favorites page
+        const favoritesPage = new FavoritesPage();
+        favoritesPage.initialize();
 
         // Remove loading class
         window.addEventListener('load', function() {

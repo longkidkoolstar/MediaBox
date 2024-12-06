@@ -11,8 +11,29 @@ class FeaturedContent {
         this.trendingShows = [];
         this.latestAnime = [];
         
+        // Initialize favorites after ensuring favoritesManager is ready
+        this.initializeFavorites();
+        
         // Start content rotation
         this.startContentRotation();
+    }
+
+    async initializeFavorites() {
+        // Check if favoritesManager is already initialized
+        if (window.favoritesManager?.initialized && window.userManager?.getCurrentUser()) {
+            this.updateFavoritesSection();
+            return;
+        }
+
+        // Wait for favoritesManager to be available and initialized
+        while (!window.favoritesManager?.initialized) {
+            await new Promise(resolve => setTimeout(resolve, 100));
+        }
+        
+        // Now check if user is logged in and update favorites
+        if (window.userManager?.getCurrentUser()) {
+            this.updateFavoritesSection();
+        }
     }
 
     async fetchTMDBContent() {
@@ -64,11 +85,19 @@ class FeaturedContent {
     }
 
     createMediaCard(item) {
+        // Default image for when poster is missing
+        const defaultImage = 'images/no-poster.svg';
+        const imageUrl = item.image || item.poster || defaultImage;
+        const rating = typeof item.rating === 'number' ? item.rating.toFixed(1) : 'N/A';
+        
         return `
-            <div class="media-card" data-id="${item.id}" data-type="${item.type}" onclick="handleMediaClick('${item.type}', ${item.id}, '${item.title.replace(/'/g, "\\'")}')">
-                <img src="${item.image}" alt="${item.title}" loading="lazy">
-                <div class="media-title">${item.title}</div>
-                <div class="media-rating">★ ${item.rating.toFixed(1)}</div>
+            <div class="media-card" data-id="${item.id}" data-media-type="${item.type}">
+                ${window.favoritesManager?.createFavoriteButton(item.id) || ''}
+                <div class="media-content" onclick="handleMediaClick('${item.type}', ${item.id}, '${(item.title || '').replace(/'/g, "\\'")}')">
+                    <img src="${imageUrl}" alt="${item.title || 'Untitled'}" loading="lazy" onerror="this.src='${defaultImage}'">
+                    <div class="media-title">${item.title || 'Untitled'}</div>
+                    <div class="media-rating">★ ${rating}</div>
+                </div>
             </div>
         `;
     }
@@ -86,6 +115,59 @@ class FeaturedContent {
         }
         if (latestAnimeContainer) {
             latestAnimeContainer.innerHTML = this.latestAnime.map(anime => this.createMediaCard(anime)).join('');
+        }
+
+        // Add favorites section if user is logged in
+        if (window.userManager?.getCurrentUser()) {
+            this.updateFavoritesSection();
+        }
+
+        // Listen for login/logout events
+        window.addEventListener('userLogin', () => this.updateFavoritesSection());
+        window.addEventListener('userLogout', () => {
+            const favoritesSection = document.querySelector('.favorites-section');
+            if (favoritesSection) {
+                favoritesSection.remove();
+            }
+        });
+    }
+
+    updateFavoritesSection() {
+        const favorites = favoritesManager.getAllFavorites();
+        let favoritesSection = document.querySelector('.favorites-section');
+        
+        if (!favoritesSection) {
+            favoritesSection = document.createElement('section');
+            favoritesSection.className = 'favorites-section';
+            favoritesSection.innerHTML = `
+                <h2>My Favorites</h2>
+                <div id="favoritesContent" class="favorites-grid"></div>
+            `;
+            this.featuredSection.parentNode.insertBefore(favoritesSection, this.featuredSection);
+        }
+
+        const favoritesContent = favoritesSection.querySelector('#favoritesContent');
+        if (favorites.length > 0) {
+            // Display only first 5 favorites
+            const displayedFavorites = favorites.slice(0, 5);
+            favoritesContent.innerHTML = displayedFavorites.map(item => this.createMediaCard({
+                ...item,
+                rating: item.rating || 0
+            })).join('');
+            
+            // Add "See More" link if there are more than 5 favorites
+            if (favorites.length > 5) {
+                const seeMoreDiv = document.createElement('div');
+                seeMoreDiv.className = 'see-more-favorites';
+                seeMoreDiv.innerHTML = `
+                    <a href="favorites.html" class="see-more-link">
+                        See More (${favorites.length - 5} more)
+                    </a>
+                `;
+                favoritesContent.appendChild(seeMoreDiv);
+            }
+        } else {
+            favoritesContent.innerHTML = '<p class="no-favorites">No favorites yet. Click the heart icon on any media to add it to your favorites!</p>';
         }
     }
 
