@@ -141,7 +141,7 @@ class FeaturedContent {
         });
     }
 
-    updateFavoritesSection() {
+    async updateFavoritesSection() {
         if (!window.favoritesManager) return;
         
         const favorites = window.favoritesManager.getAllFavorites();
@@ -161,10 +161,29 @@ class FeaturedContent {
         if (favorites && favorites.length > 0) {
             // Display only first 5 favorites
             const displayedFavorites = favorites.slice(0, 5);
-            favoritesContent.innerHTML = displayedFavorites.map(item => this.createMediaCard({
-                ...item,
-                rating: item.rating || 0
-            })).join('');
+            
+            // Fetch current ratings for each favorite
+            const updatedFavorites = await Promise.all(displayedFavorites.map(async item => {
+                try {
+                    const endpoint = item.type === 'movie' 
+                        ? `https://api.themoviedb.org/3/movie/${item.id}`
+                        : `https://api.themoviedb.org/3/tv/${item.id}`;
+                    
+                    const response = await fetch(`${endpoint}?api_key=${this.apiKey}`);
+                    if (!response.ok) throw new Error('Failed to fetch rating');
+                    
+                    const data = await response.json();
+                    return {
+                        ...item,
+                        rating: data.vote_average
+                    };
+                } catch (error) {
+                    console.warn(`Failed to fetch rating for ${item.title}:`, error);
+                    return item; // Return original item if fetch fails
+                }
+            }));
+            
+            favoritesContent.innerHTML = updatedFavorites.map(item => this.createMediaCard(item)).join('');
             
             // Add "See More" link if there are more than 5 favorites
             if (favorites.length > 5) {

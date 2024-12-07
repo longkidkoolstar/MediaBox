@@ -149,6 +149,11 @@ class SearchPage {
                 </div>
             </div>
         `).join('');
+
+        // Update favorite buttons after displaying results
+        if (window.favoritesManager?.initialized) {
+            window.favoritesManager.updateAllFavoriteButtons();
+        }
     }
 
     handleLoginClick() {
