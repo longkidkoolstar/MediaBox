@@ -3,7 +3,7 @@ class FeaturedContent {
     constructor() {
         this.featuredSection = document.querySelector('.featured-section');
         this.currentIndex = 0;
-        this.rotationInterval = 10000; // 10 seconds
+        this.refreshInterval = 24 * 60 * 60 * 1000; // 24 hours in milliseconds
         this.apiKey = '1d21d96347d1b72f32806b6256c3a132';  // TMDB API key
 
         // Initialize content arrays
@@ -14,7 +14,7 @@ class FeaturedContent {
         // Initialize favorites after ensuring favoritesManager is ready
         this.initializeFavorites();
         
-        // Start content rotation
+        // Start content refresh check
         this.startContentRotation();
     }
 
@@ -38,6 +38,9 @@ class FeaturedContent {
 
     async fetchTMDBContent() {
         try {
+            // Save the refresh timestamp
+            localStorage.setItem('lastContentRefresh', Date.now().toString());
+
             // Fetch popular movies
             const moviesResponse = await fetch(
                 `https://api.themoviedb.org/3/movie/popular?api_key=${this.apiKey}&language=en-US&page=1`
@@ -75,6 +78,13 @@ class FeaturedContent {
                 type: 'anime',
                 image: `https://image.tmdb.org/t/p/w500${anime.poster_path}`,
                 rating: anime.vote_average
+            }));
+
+            // Cache the content
+            localStorage.setItem('featuredContent', JSON.stringify({
+                popularMovies: this.popularMovies,
+                trendingShows: this.trendingShows,
+                latestAnime: this.latestAnime
             }));
 
             // Update the display
@@ -172,13 +182,26 @@ class FeaturedContent {
     }
 
     startContentRotation() {
-        // Initial fetch
-        this.fetchTMDBContent();
-
-        // Set up periodic content refresh
-        setInterval(() => {
+        const lastRefresh = localStorage.getItem('lastContentRefresh');
+        const currentTime = Date.now();
+        
+        // If no last refresh or 24 hours have passed, fetch new content
+        if (!lastRefresh || (currentTime - parseInt(lastRefresh)) >= this.refreshInterval) {
             this.fetchTMDBContent();
-        }, this.rotationInterval);
+        } else {
+            // Try to load cached content
+            const cachedContent = localStorage.getItem('featuredContent');
+            if (cachedContent) {
+                const content = JSON.parse(cachedContent);
+                this.popularMovies = content.popularMovies || [];
+                this.trendingShows = content.trendingShows || [];
+                this.latestAnime = content.latestAnime || [];
+                this.populateFeaturedContent();
+            } else {
+                // If no cached content, fetch new content
+                this.fetchTMDBContent();
+            }
+        }
     }
 
     hide() {

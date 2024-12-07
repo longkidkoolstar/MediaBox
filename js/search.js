@@ -74,6 +74,9 @@ class SearchPage {
             );
             const animeData = await animeResponse.json();
 
+            // Get anime IDs to filter them out from TV shows
+            const animeIds = new Set(animeData.results.map(item => item.id));
+
             // Combine and process results
             this.searchResults = [
                 ...movieData.results.map(item => ({
@@ -84,14 +87,16 @@ class SearchPage {
                     rating: item.vote_average,
                     year: item.release_date ? new Date(item.release_date).getFullYear() : 'N/A'
                 })),
-                ...tvData.results.map(item => ({
-                    id: item.id,
-                    title: item.name,
-                    type: 'tv',
-                    image: item.poster_path ? `https://image.tmdb.org/t/p/w500${item.poster_path}` : 'https://www.themoviedb.org/assets/2/v4/glyphicons/basic/glyphicons-basic-38-picture-grey-c2ebdbb057f2a7614185931650f8cee23fa137b93812ccb132b9df511df1cfac.svg',
-                    rating: item.vote_average,
-                    year: item.first_air_date ? new Date(item.first_air_date).getFullYear() : 'N/A'
-                })),
+                ...tvData.results
+                    .filter(item => !animeIds.has(item.id))  // Filter out anime from TV shows
+                    .map(item => ({
+                        id: item.id,
+                        title: item.name,
+                        type: 'tv',
+                        image: item.poster_path ? `https://image.tmdb.org/t/p/w500${item.poster_path}` : 'https://www.themoviedb.org/assets/2/v4/glyphicons/basic/glyphicons-basic-38-picture-grey-c2ebdbb057f2a7614185931650f8cee23fa137b93812ccb132b9df511df1cfac.svg',
+                        rating: item.vote_average,
+                        year: item.first_air_date ? new Date(item.first_air_date).getFullYear() : 'N/A'
+                    })),
                 ...animeData.results.map(item => ({
                     id: item.id,
                     title: item.name,
