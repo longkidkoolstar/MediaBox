@@ -11,6 +11,16 @@ class FeaturedContent {
         this.trendingShows = [];
         this.latestAnime = [];
         
+        // Listen for favorites events
+        window.addEventListener('favoritesLoaded', () => {
+            // Update favorite buttons when favorites are loaded
+            if (window.favoritesManager) {
+                window.favoritesManager.updateAllFavoriteButtons();
+                // Update favorites section when favorites are loaded
+                this.updateFavoritesSection();
+            }
+        });
+        
         // Initialize favorites after ensuring favoritesManager is ready
         this.initializeFavorites();
         
@@ -19,20 +29,9 @@ class FeaturedContent {
     }
 
     async initializeFavorites() {
-        // Check if favoritesManager is already initialized
-        if (window.favoritesManager?.initialized && window.userManager?.getCurrentUser()) {
-            this.updateFavoritesSection();
-            return;
-        }
-
-        // Wait for favoritesManager to be available and initialized
-        while (!window.favoritesManager?.initialized) {
+        // Wait for favoritesManager to be available
+        while (!window.favoritesManager) {
             await new Promise(resolve => setTimeout(resolve, 100));
-        }
-        
-        // Now check if user is logged in and update favorites
-        if (window.userManager?.getCurrentUser()) {
-            this.updateFavoritesSection();
         }
     }
 
@@ -143,7 +142,9 @@ class FeaturedContent {
     }
 
     updateFavoritesSection() {
-        const favorites = favoritesManager.getAllFavorites();
+        if (!window.favoritesManager) return;
+        
+        const favorites = window.favoritesManager.getAllFavorites();
         let favoritesSection = document.querySelector('.favorites-section');
         
         if (!favoritesSection) {
@@ -157,7 +158,7 @@ class FeaturedContent {
         }
 
         const favoritesContent = favoritesSection.querySelector('#favoritesContent');
-        if (favorites.length > 0) {
+        if (favorites && favorites.length > 0) {
             // Display only first 5 favorites
             const displayedFavorites = favorites.slice(0, 5);
             favoritesContent.innerHTML = displayedFavorites.map(item => this.createMediaCard({

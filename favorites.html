@@ -34,16 +34,6 @@
             transition: none;
         }
     </style>
-    <script>
-        // Initialize theme before page load
-        (function() {
-            const darkMode = localStorage.getItem('darkMode') === 'true';
-            if (darkMode) {
-                document.documentElement.setAttribute('data-theme', 'dark');
-                document.body.classList.add('dark-mode');
-            }
-        })();
-    </script>
 </head>
 <body class="js-loading">
     <!-- Auth Modal -->
@@ -103,6 +93,14 @@
     <script src="js/settings.js"></script>
     <script src="js/favorites.js"></script>
     <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const darkMode = localStorage.getItem('darkMode') === 'true';
+            if (darkMode) {
+                document.documentElement.setAttribute('data-theme', 'dark');
+                document.body.classList.add('dark-mode');
+            }
+        });
+
         class FavoritesPage {
             constructor() {
                 this.favoritesGrid = document.getElementById('favoritesGrid');

@@ -7,20 +7,40 @@ class FavoritesManager {
     }
 
     async initialize() {
+        // Ensure DOM is fully loaded
+        if (document.readyState !== 'complete') {
+            await new Promise(resolve => window.addEventListener('load', resolve, { once: true }));
+        }
+
         // Wait for userManager to be available
         if (typeof userManager === 'undefined') {
             console.warn('UserManager not loaded yet, waiting...');
             await new Promise(resolve => setTimeout(resolve, 100));
             return this.initialize();
         }
-        await this.loadFavorites();
+        
+        // Setup event listeners first
         this.setupEventListeners();
+        
+        // Then load favorites
+        await this.loadFavorites();
+        
         this.initialized = true;
+        
+        // Update all favorite buttons in the DOM
+        this.updateAllFavoriteButtons();
+        
+        // Dispatch initialized event
+        window.dispatchEvent(new CustomEvent('favoritesInitialized'));
     }
 
     async loadFavorites() {
         const user = window.userManager?.getCurrentUser();
-        if (!user) return;
+        if (!user) {
+            this.favorites = new Map();
+            window.dispatchEvent(new CustomEvent('favoritesLoaded'));
+            return;
+        }
         
         try {
             // Fetch all users' data
@@ -37,6 +57,9 @@ class FavoritesManager {
             } else {
                 this.favorites = new Map();
             }
+            
+            // Dispatch event when favorites are loaded
+            window.dispatchEvent(new CustomEvent('favoritesLoaded'));
         } catch (error) {
             console.error('Error loading favorites from cloud:', error);
             // Fallback to local storage
@@ -50,6 +73,8 @@ class FavoritesManager {
                     this.favorites = new Map();
                 }
             }
+            // Always dispatch event, even on error
+            window.dispatchEvent(new CustomEvent('favoritesLoaded'));
         }
     }
 
@@ -174,6 +199,29 @@ class FavoritesManager {
         window.addEventListener('userLogout', () => {
             this.favorites.clear();
         });
+    }
+
+    updateAllFavoriteButtons() {
+        try {
+            // Find all favorite buttons in the DOM
+            const favoriteButtons = document.querySelectorAll('.favorite-btn');
+            favoriteButtons?.forEach(button => {
+                if (!button) return;  // Skip if button is null
+                const mediaId = button.dataset?.favoriteId;
+                if (mediaId) {
+                    const isFavorited = this.isFavorite(mediaId);
+                    // Use try-catch for classList operations
+                    try {
+                        button.classList.toggle('favorited', isFavorited);
+                        button.setAttribute('title', isFavorited ? 'Remove from favorites' : 'Add to favorites');
+                    } catch (err) {
+                        console.warn('Error updating favorite button:', err);
+                    }
+                }
+            });
+        } catch (err) {
+            console.error('Error in updateAllFavoriteButtons:', err);
+        }
     }
 }
 
