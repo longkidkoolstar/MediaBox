@@ -129,6 +129,7 @@ class FavoritesManager {
         // Update local state and UI immediately
         if (this.favorites.has(mediaId)) {
             this.favorites.delete(mediaId);
+            this.updateAllFavoriteButtons();
         } else {
             this.favorites.set(mediaId, mediaData);
         }

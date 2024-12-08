@@ -1569,3 +1569,30 @@ body.dark-mode .no-favorites {
         font-size: 0.85rem;
     }
 }
+.see-more-favorites {
+    text-align: center;
+    margin-top: 1.5rem;
+    padding: 0.5rem;
+}
+
+.see-more-link {
+    display: inline-block;
+    padding: 0.75rem 1.5rem;
+    background-color: var(--primary-color);
+    color: white;
+    text-decoration: none;
+    border-radius: 12px;
+    font-weight: 600;
+    transition: all 0.2s ease;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.see-more-link:hover {
+    background-color: var(--primary-hover);
+    transform: translateY(-1px);
+    box-shadow: 0 6px 8px rgba(0, 0, 0, 0.15);
+}
+
+body.dark-mode .see-more-link {
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+}
