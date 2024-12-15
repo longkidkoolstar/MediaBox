@@ -200,6 +200,24 @@ class FavoritesManager {
         window.addEventListener('userLogout', () => {
             this.favorites.clear();
         });
+
+        // Listen for storage changes
+        window.addEventListener('storage', function(event) {
+            // Check if the change is related to your specific key
+            if (event.key === `favorites_${window.userManager?.getCurrentUser()?.id}`) {
+                // Get the new value from the event
+                const newValue = event.newValue;
+
+                // Get the current value from localStorage
+                const currentValue = localStorage.getItem(`favorites_${window.userManager?.getCurrentUser()?.id}`);
+
+                // Compare and overwrite if necessary
+                if (newValue !== currentValue) {
+                    localStorage.setItem(`favorites_${window.userManager?.getCurrentUser()?.id}`, newValue);
+                    console.log('Local storage updated with new value:', newValue);
+                }
+            }
+        });
     }
 
     updateAllFavoriteButtons() {

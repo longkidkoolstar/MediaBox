@@ -60,3 +60,21 @@ class SettingsManager {
 
 // Create and initialize a global settingsManager instance
 window.settingsManager = new SettingsManager();
+
+// Listen for storage changes
+window.addEventListener('storage', function(event) {
+    // Check if the change is related to your specific key
+    if (event.key === `settings_${window.userManager?.getCurrentUser()?.id}`) {
+        // Get the new value from the event
+        const newValue = event.newValue;
+
+        // Get the current value from localStorage
+        const currentValue = localStorage.getItem(`settings_${window.userManager?.getCurrentUser()?.id}`);
+
+        // Compare and overwrite if necessary
+        if (newValue !== currentValue) {
+            localStorage.setItem(`settings_${window.userManager?.getCurrentUser()?.id}`, newValue);
+            console.log('Local storage updated with new value:', newValue);
+        }
+    }
+});
