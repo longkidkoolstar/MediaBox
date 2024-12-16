@@ -114,16 +114,27 @@ class UserManager {
 
         signinForm?.addEventListener('submit', async (e) => {
             e.preventDefault();
-            const email = e.target.querySelector('input[type="email"]').value;
+            const input = e.target.querySelector('input[placeholder="Username or Email"]').value;
             const password = e.target.querySelector('input[type="password"]').value;
             
-            const user = this.users.find(u => u.email === email && u.password === password);
+            const type = this.validateInput(input);
+            let user;
+            if (type === 'email') {
+                user = this.users.find(u => u.email === input && u.password === password);
+            } else {
+                user = this.users.find(u => u.username === input && u.password === password);
+            }
             if (user) {
                 this.login(user);
                 authModal.style.display = 'none';
                 e.target.reset();
             } else {
-                alert('Invalid email or password');
+                const type = this.validateInput(input);
+                if (type === 'email') {
+                    alert('Invalid email or password');
+                } else {
+                    alert('Invalid username or password');
+                }
             }
         });
 
@@ -161,6 +172,11 @@ class UserManager {
         logoutButton?.addEventListener('click', () => {
             this.logout();
         });
+    }
+
+    validateInput(input) {
+        const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        return emailPattern.test(input) ? 'email' : 'username';
     }
 
     updateAuthUI() {
