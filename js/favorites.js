@@ -188,7 +188,7 @@ class FavoritesManager {
                         id: mediaId,
                         title: mediaCard.querySelector('.media-title')?.textContent,
                         poster: mediaCard.querySelector('img')?.src,
-                        type: mediaCard.dataset.mediaType
+                        type: mediaCard.dataset.mediaType || (mediaCard.dataset.mediaType = mediaCard.classList.contains('movie-card') ? 'movie' : 'tv')
                     };
                     await this.toggleFavorite(mediaId, mediaData);
                 }
