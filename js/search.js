@@ -172,13 +172,22 @@ class SearchPage {
     handleMediaClick(type, id, title) {
         // Store the selected media info
         localStorage.setItem('selectedMedia', JSON.stringify({ type, id, title }));
-        
-        // Treat anime as TV shows for playback
-        if (type === 'tv' || type === 'anime') {
-            window.location.href = `player.html?type=tv&id=${id}&season=1&episode=1`;
-        } else {
-            window.location.href = `player.html?type=${type}&id=${id}`;
-        }
+    }
+}
+
+// Handle media click
+function handleMediaClick(type, id, title) {
+    // Treat anime as TV shows for playback
+    if (type === 'tv' || type === 'anime') {
+        const savedSeason = localStorage.getItem(`show_${id}_season`);
+        const savedEpisode = localStorage.getItem(`show_${id}_episode`);
+
+        const season = savedSeason ? savedSeason : 1; // Use saved value or default to 1
+        const episode = savedEpisode ? savedEpisode : 1; // Use saved value or default to 1
+
+        window.location.href = `player.html?type=tv&id=${id}&season=${season}&episode=${episode}`;
+    } else {
+        window.location.href = `player.html?type=${type}&id=${id}`;
     }
 }
 

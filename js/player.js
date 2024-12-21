@@ -6,36 +6,51 @@ class MediaPlayer {
         this.currentSource = null;
     }
 
-    initialize(containerId) {
-        try {
-            // Check if container exists
-            this.container = document.getElementById(containerId);
-            if (!this.container) {
-                console.error('Player container not found:', containerId);
-                return false;
-            }
-
-            // Apply theme based on settings
-            this.applyTheme();
-
-            // Listen for theme changes
-            window.addEventListener('settingsChanged', (event) => {
-                if (event.detail && typeof event.detail.darkMode !== 'undefined') {
-                    this.applyTheme();
-                }
-            });
-
-            // Mark as initialized
-            this.initialized = true;
-            console.log('MediaPlayer initialized successfully');
-            return true;
-        } catch (error) {
-            console.error('Error initializing MediaPlayer:', error);
-            this.initialized = false;
-            this.container = null;
+initialize(containerId) {
+    try {
+        // Check if container exists
+        this.container = document.getElementById(containerId);
+        if (!this.container) {
+            console.error('Player container not found:', containerId);
             return false;
         }
+
+        // Apply theme based on settings
+        this.applyTheme();
+
+        // Listen for theme changes
+        window.addEventListener('settingsChanged', (event) => {
+            if (event.detail && typeof event.detail.darkMode !== 'undefined') {
+                this.applyTheme();
+            }
+        });
+
+        // Mark as initialized
+        this.initialized = true;
+        console.log('MediaPlayer initialized successfully');
+
+        // Retrieve saved values from localStorage
+        const savedShows = Object.keys(localStorage).filter(key => key.startsWith('show_'));
+
+        if (savedShows.length > 0) {
+            // You can choose to play the most recent show or any other logic
+            const latestShowId = savedShows[savedShows.length - 1].split('_')[1]; // Get the last showId
+            const savedSeason = localStorage.getItem(`show_${latestShowId}_season`);
+            const savedEpisode = localStorage.getItem(`show_${latestShowId}_episode`);
+            
+            if (savedSeason && savedEpisode) {
+                this.playTvShow(latestShowId, savedSeason, savedEpisode);
+            }
+        }
+
+        return true;
+    } catch (error) {
+        console.error('Error initializing MediaPlayer:', error);
+        this.initialized = false;
+        this.container = null;
+        return false;
     }
+}
 
     applyTheme() {
         let isDarkMode = false;
@@ -413,6 +428,9 @@ class MediaPlayer {
             }
 
             this.createIframe(embedUrl);
+// Store the current show, season, and episode in localStorage with unique keys
+localStorage.setItem(`show_${showId}_season`, season);
+localStorage.setItem(`show_${showId}_episode`, episode);
         } catch (error) {
             console.error('Error playing TV show:', error);
             if (this.container) {
