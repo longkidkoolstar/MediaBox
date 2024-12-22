@@ -40,6 +40,16 @@
         <div class="player-container" id="playerContainer">
             <div class="loading">Loading media player...</div>
         </div>
+
+        <!-- Add episode navigation buttons -->
+        <div class="episode-navigation" id="episodeNavigation" style="display: none;">
+            <button id="prevEpisodeBtn" class="nav-btn" title="Previous Episode">
+                <i class="fas fa-step-backward"></i> Previous
+            </button>
+            <button id="nextEpisodeBtn" class="nav-btn" title="Next Episode">
+                Next <i class="fas fa-step-forward"></i>
+            </button>
+        </div>
     </main>
 
     <script>
@@ -125,13 +135,17 @@
                     const seasonSelect = document.getElementById('seasonSelect');
                     const episodeSelect = document.getElementById('episodeSelect');
                     const playEpisodeBtn = document.getElementById('playEpisodeBtn');
+                    const episodeNavigation = document.getElementById('episodeNavigation');
+                    const prevEpisodeBtn = document.getElementById('prevEpisodeBtn');
+                    const nextEpisodeBtn = document.getElementById('nextEpisodeBtn');
 
-                    if (!episodeControls || !seasonSelect || !episodeSelect || !playEpisodeBtn) {
+                    if (!episodeControls || !seasonSelect || !episodeSelect || !playEpisodeBtn || !episodeNavigation || !prevEpisodeBtn || !nextEpisodeBtn) {
                         throw new Error('Required TV show controls not found');
                     }
 
                     // Show controls
                     episodeControls.style.display = 'flex';
+                    episodeNavigation.style.display = 'flex';
 
                     // Populate seasons
                     seasonSelect.innerHTML = data.seasons
@@ -186,6 +200,26 @@
 
                     // Play initial episode
                     mediaPlayer.playTvShow(mediaId, season || 1, episode || 1);
+
+                    // Episode navigation buttons
+                    /*
+                    prevEpisodeBtn.addEventListener('click', () => {
+                        const currentEpisode = parseInt(episodeSelect.value, 10);
+                        if (currentEpisode > 1) {
+                            episodeSelect.value = currentEpisode - 1;
+                            playEpisodeBtn.click();
+                        }
+                    });
+
+                    nextEpisodeBtn.addEventListener('click', () => {
+                        const currentEpisode = parseInt(episodeSelect.value, 10);
+                        const maxEpisode = episodeSelect.options.length;
+                        if (currentEpisode < maxEpisode) {
+                            episodeSelect.value = currentEpisode + 1;
+                            playEpisodeBtn.click();
+                        }
+                    });
+                    */
                 } else if (mediaType === 'movie') {
                     mediaPlayer.playMovie(mediaId);
                 }

@@ -427,6 +427,13 @@ initialize(containerId) {
                 }
             }
 
+            // Show navigation buttons for TV shows
+            const navButtons = document.getElementById('episodeNavigation');
+            if (navButtons) {
+                navButtons.style.display = 'flex';
+                this.updateNavigationButtons(showId, season, episode);
+            }
+
             this.createIframe(embedUrl);
 // Store the current show, season, and episode in localStorage with unique keys
 localStorage.setItem(`show_${showId}_season`, season);
@@ -444,6 +451,51 @@ localStorage.setItem(`show_${showId}_episode`, episode);
                     </div>
                 `;
             }
+        }
+    }
+
+    updateNavigationButtons(showId, season, episode) {
+        const navigationDiv = document.getElementById('episodeNavigation');
+        const prevBtn = document.getElementById('prevEpisodeBtn');
+        const nextBtn = document.getElementById('nextEpisodeBtn');
+        const episodeSelect = document.getElementById('episodeSelect');
+
+        // Hide navigation for movies
+        const urlParams = new URLSearchParams(window.location.search);
+        const mediaType = urlParams.get('type');
+        
+        if (mediaType === 'movie') {
+            if (navigationDiv) navigationDiv.style.display = 'none';
+            return;
+        }
+
+        // Show navigation for TV shows and anime
+        if (navigationDiv) navigationDiv.style.display = 'flex';
+
+        if (prevBtn && nextBtn && episodeSelect) {
+            const totalEpisodes = episodeSelect.options.length;
+            const currentEpisode = Number(episodeSelect.value) || Number(episode);
+
+            prevBtn.disabled = currentEpisode <= 1;
+            nextBtn.disabled = currentEpisode >= totalEpisodes;
+
+            prevBtn.onclick = (e) => {
+                e.preventDefault();
+                if (currentEpisode > 1) {
+                    const newEpisode = currentEpisode - 1;
+                    this.playTvShow(showId, season, newEpisode);
+                    episodeSelect.value = newEpisode;
+                }
+            };
+
+            nextBtn.onclick = (e) => {
+                e.preventDefault(); 
+                if (currentEpisode < totalEpisodes) {
+                    const newEpisode = currentEpisode + 1;
+                    this.playTvShow(showId, season, newEpisode);
+                    episodeSelect.value = newEpisode;
+                }
+            };
         }
     }
 }
