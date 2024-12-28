@@ -67,15 +67,26 @@ class SearchPage {
                 `https://api.themoviedb.org/3/search/tv?api_key=${this.apiKey}&query=${encodeURIComponent(query)}`
             );
             const tvData = await tvResponse.json();
-            
-            // Search anime (using TV search with anime keyword)
-            const animeResponse = await fetch(
-                `https://api.themoviedb.org/3/search/tv?api_key=${this.apiKey}&query=${encodeURIComponent(query)}&with_keywords=210024`
-            );
-            const animeData = await animeResponse.json();
 
-            // Get anime IDs to filter them out from TV shows
-            const animeIds = new Set(animeData.results.map(item => item.id));
+            // For each TV result, fetch additional details to check if it's anime
+            const tvDetailsPromises = tvData.results.map(show => 
+                fetch(`https://api.themoviedb.org/3/tv/${show.id}?api_key=${this.apiKey}&append_to_response=keywords`)
+                    .then(res => res.json())
+            );
+            
+            const tvDetails = await Promise.all(tvDetailsPromises);
+            
+            // Anime-related keywords and genres
+            const animeKeywords = [210024, 6075]; // anime, japanese animation
+            const animeGenres = [16]; // animation
+
+            // Helper function to check if a show is anime
+            const isAnime = (details) => {
+                const hasAnimeKeyword = details.keywords?.results?.some(k => animeKeywords.includes(k.id));
+                const hasAnimeGenre = details.genres?.some(g => animeGenres.includes(g.id));
+                const isJapanese = details.origin_country?.includes('JP');
+                return (hasAnimeKeyword || (hasAnimeGenre && isJapanese));
+            };
 
             // Combine and process results
             this.searchResults = [
@@ -87,20 +98,10 @@ class SearchPage {
                     rating: item.vote_average,
                     year: item.release_date ? new Date(item.release_date).getFullYear() : 'N/A'
                 })),
-                ...tvData.results
-                    .filter(item => !animeIds.has(item.id))  // Filter out anime from TV shows
-                    .map(item => ({
-                        id: item.id,
-                        title: item.name,
-                        type: 'tv',
-                        image: item.poster_path ? `https://image.tmdb.org/t/p/w500${item.poster_path}` : 'https://www.themoviedb.org/assets/2/v4/glyphicons/basic/glyphicons-basic-38-picture-grey-c2ebdbb057f2a7614185931650f8cee23fa137b93812ccb132b9df511df1cfac.svg',
-                        rating: item.vote_average,
-                        year: item.first_air_date ? new Date(item.first_air_date).getFullYear() : 'N/A'
-                    })),
-                ...animeData.results.map(item => ({
+                ...tvData.results.map((item, index) => ({
                     id: item.id,
                     title: item.name,
-                    type: 'anime',
+                    type: isAnime(tvDetails[index]) ? 'anime' : 'tv',
                     image: item.poster_path ? `https://image.tmdb.org/t/p/w500${item.poster_path}` : 'https://www.themoviedb.org/assets/2/v4/glyphicons/basic/glyphicons-basic-38-picture-grey-c2ebdbb057f2a7614185931650f8cee23fa137b93812ccb132b9df511df1cfac.svg',
                     rating: item.vote_average,
                     year: item.first_air_date ? new Date(item.first_air_date).getFullYear() : 'N/A'
@@ -132,23 +133,30 @@ class SearchPage {
             return;
         }
 
-        this.resultsContainer.innerHTML = results.map(item => `
-            <div class="media-card">
-                ${window.favoritesManager?.createFavoriteButton(item.id) || ''}
-                <div class="media-content" onclick="window.searchPage.handleMediaClick('${item.type}', ${item.id}, '${item.title.replace(/'/g, "\\'")}')">
-                    <img src="${item.image}" alt="${item.title}" loading="lazy">
-                    <div class="media-year">${item.year || 'N/A'}</div>
-                    <div class="media-info">
-                        <div class="media-type">${item.type.toUpperCase()}</div>
-                        <h3 class="media-title">${item.title}</h3>
-                        <div class="media-rating">
-                            <i class="fas fa-star"></i>
-                            ${item.rating ? item.rating.toFixed(1) : 'N/A'}
+        this.resultsContainer.innerHTML = results.map(item => {
+            // Check if the image is the placeholder image
+            const imageUrl = item.image === 'https://www.themoviedb.org/assets/2/v4/glyphicons/basic/glyphicons-basic-38-picture-grey-c2ebdbb057f2a7614185931650f8cee23fa137b93812ccb132b9df511df1cfac.svg'
+                ? 'images/no-poster.svg' // Use no-poster.svg if it is the placeholder
+                : item.image; // Otherwise, use the original image
+
+            return `
+                <div class="media-card">
+                    ${window.favoritesManager?.createFavoriteButton(item.id) || ''}
+                    <div class="media-content" onclick="window.searchPage.handleMediaClick('${item.type}', ${item.id}, '${item.title.replace(/'/g, "\\'")}')">
+                        <img src="${imageUrl}" alt="${item.title}" loading="lazy">
+                        <div class="media-year">${item.year || 'N/A'}</div>
+                        <div class="media-info">
+                            <div class="media-type">${item.type.toUpperCase()}</div>
+                            <h3 class="media-title">${item.title}</h3>
+                            <div class="media-rating">
+                                <i class="fas fa-star"></i>
+                                ${item.rating ? item.rating.toFixed(1) : 'N/A'}
+                            </div>
                         </div>
                     </div>
                 </div>
-            </div>
-        `).join('');
+            `;
+        }).join('');
 
         // Update favorite buttons after displaying results
         if (window.favoritesManager?.initialized) {
