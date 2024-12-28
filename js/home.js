@@ -242,13 +242,15 @@ window.featuredContent = new FeaturedContent();
 
 // Handle media click
 function handleMediaClick(type, id, title) {
+    // Store the selected media info
+    localStorage.setItem('selectedMedia', JSON.stringify({ type, id, title }));
+    
     // Treat anime as TV shows for playback
     if (type === 'tv' || type === 'anime') {
-        const savedSeason = localStorage.getItem(`show_${id}_season`);
-        const savedEpisode = localStorage.getItem(`show_${id}_episode`);
-
-        const season = savedSeason ? savedSeason : 1; // Use saved value or default to 1
-        const episode = savedEpisode ? savedEpisode : 1; // Use saved value or default to 1
+        const userWatchProgress = window.userManager?.currentUser?.watchProgress || {};
+        const savedProgress = userWatchProgress[id] || { season: '1', episode: '1' }; // Default to '1' if no progress found
+        const season = savedProgress.season;
+        const episode = savedProgress.episode;
 
         window.location.href = `player.html?type=tv&id=${id}&season=${season}&episode=${episode}`;
     } else {

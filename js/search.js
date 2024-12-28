@@ -175,8 +175,12 @@ class SearchPage {
         
         // Navigate to player page
         if (type === 'tv' || type === 'anime') {
-            const savedSeason = localStorage.getItem(`show_${id}_season`) || '1';
-            const savedEpisode = localStorage.getItem(`show_${id}_episode`) || '1';
+            // Retrieve the user's watch progress if logged in
+            const userWatchProgress = window.userManager?.currentUser?.watchProgress || {};
+            const savedProgress = userWatchProgress[id] || { season: '1', episode: '1' }; // Default to '1' if no progress found
+            const savedSeason = savedProgress.season;
+            const savedEpisode = savedProgress.episode;
+
             window.location.href = `player.html?type=tv&id=${id}&season=${savedSeason}&episode=${savedEpisode}`;
         } else {
             window.location.href = `player.html?type=${type}&id=${id}`;

@@ -29,17 +29,26 @@ initialize(containerId) {
         this.initialized = true;
         console.log('MediaPlayer initialized successfully');
 
-        // Retrieve saved values from localStorage
-        const savedShows = Object.keys(localStorage).filter(key => key.startsWith('show_'));
-
-        if (savedShows.length > 0) {
-            // You can choose to play the most recent show or any other logic
-            const latestShowId = savedShows[savedShows.length - 1].split('_')[1]; // Get the last showId
-            const savedSeason = localStorage.getItem(`show_${latestShowId}_season`);
-            const savedEpisode = localStorage.getItem(`show_${latestShowId}_episode`);
-            
-            if (savedSeason && savedEpisode) {
-                this.playTvShow(latestShowId, savedSeason, savedEpisode);
+        // Check for saved progress
+        if (window.userManager?.currentUser?.watchProgress) {
+            // Get the last watched show from user data
+            const watchProgress = window.userManager.currentUser.watchProgress;
+            const lastShowId = Object.keys(watchProgress).pop();
+            if (lastShowId) {
+                const { season, episode } = watchProgress[lastShowId];
+                this.playTvShow(lastShowId, season, episode);
+            }
+        } else {
+            // Fallback to localStorage
+            const savedShows = Object.keys(localStorage).filter(key => key.startsWith('show_'));
+            if (savedShows.length > 0) {
+                const latestShowId = savedShows[savedShows.length - 1].split('_')[1];
+                const savedSeason = localStorage.getItem(`show_${latestShowId}_season`);
+                const savedEpisode = localStorage.getItem(`show_${latestShowId}_episode`);
+                
+                if (savedSeason && savedEpisode) {
+                    this.playTvShow(latestShowId, savedSeason, savedEpisode);
+                }
             }
         }
 
@@ -435,9 +444,22 @@ initialize(containerId) {
             }
 
             this.createIframe(embedUrl);
-// Store the current show, season, and episode in localStorage with unique keys
-localStorage.setItem(`show_${showId}_season`, season);
-localStorage.setItem(`show_${showId}_episode`, episode);
+
+            // Save progress to user data if logged in
+            if (window.userManager?.currentUser) {
+                const user = window.userManager.currentUser;
+                if (!user.watchProgress) {
+                    user.watchProgress = {};
+                }
+                user.watchProgress[showId] = { season, episode };
+                
+                // Update user data in jsonstorage
+                await window.userManager.saveUsers();
+            } else {
+                // Fallback to localStorage if not logged in
+                localStorage.setItem(`show_${showId}_season`, season);
+                localStorage.setItem(`show_${showId}_episode`, episode);
+            }
         } catch (error) {
             console.error('Error playing TV show:', error);
             if (this.container) {
