@@ -7,6 +7,8 @@ self.addEventListener('install', (event) => {
           '/css/styles.css',
           '/js/favorites.js',
           '/js/home.js',
+          '/js/settings.js',
+          '/js/search.js',
           // Add other assets you want to cache
         ]);
       })
