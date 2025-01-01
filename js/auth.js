@@ -7,6 +7,20 @@ class UserManager {
         this.currentUser = null;
         this.users = [];
         this.initialized = false;
+        
+        // Immediately try to restore session from localStorage
+        const savedUserId = localStorage.getItem('currentUserId');
+        if (savedUserId) {
+            // Load cached user data from sessionStorage if available
+            const cachedUsers = sessionStorage.getItem('users');
+            if (cachedUsers) {
+                this.users = JSON.parse(cachedUsers);
+                const user = this.users.find(u => u.id === savedUserId);
+                if (user) {
+                    this.login(user, false);
+                }
+            }
+        }
     }
 
     async initialize() {
@@ -18,10 +32,25 @@ class UserManager {
 
     async loadUsers() {
         try {
+            // First load from sessionStorage for immediate display
+            const cachedUsers = sessionStorage.getItem('users');
+            if (cachedUsers) {
+                this.users = JSON.parse(cachedUsers);
+            }
+
+            // Then check server for updates
             const response = await fetch(`${STORAGE_URL}?apiKey=${API_KEY}`);
             if (response.ok) {
                 const data = await response.json();
-                this.users = data.users || [];
+                const serverUsers = data.users || [];
+                
+                // Update cache and state if server data is different
+                if (JSON.stringify(serverUsers) !== JSON.stringify(this.users)) {
+                    this.users = serverUsers;
+                    sessionStorage.setItem('users', JSON.stringify(this.users));
+                    // Dispatch event to notify of user data update
+                    window.dispatchEvent(new CustomEvent('usersUpdated'));
+                }
             }
         } catch (error) {
             console.error('Error loading users:', error);
@@ -30,6 +59,9 @@ class UserManager {
 
     async saveUsers() {
         try {
+            // Update sessionStorage immediately
+            sessionStorage.setItem('users', JSON.stringify(this.users));
+            
             const response = await fetch(`${STORAGE_URL}?apiKey=${API_KEY}`, {
                 method: 'PUT',
                 headers: {
@@ -180,6 +212,12 @@ class UserManager {
     }
 
     updateAuthUI() {
+        // Skip if document isn't ready
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', () => this.updateAuthUI());
+            return;
+        }
+
         const authButton = document.getElementById('authButton');
         const userDropdown = document.getElementById('userDropdown');
         const usernameSpan = document.getElementById('username');

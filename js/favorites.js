@@ -4,6 +4,26 @@ class FavoritesManager {
         this.initialized = false;
         this.API_KEY = '4994e33a-c36e-414e-917d-6918eddd782a';
         this.STORAGE_URL = 'https://api.jsonstorage.net/v1/json/d206ce58-9543-48db-a5e4-997cfc745ef3/d44110a3-258b-4d92-8169-84e5531fa02b';
+        
+        // Immediately try to load cached favorites
+        const user = window.userManager?.getCurrentUser();
+        if (user) {
+            const cachedData = sessionStorage.getItem(`favorites_${user.id}`);
+            if (cachedData) {
+                try {
+                    const parsedData = JSON.parse(cachedData);
+                    this.favorites = new Map(parsedData);
+                    // Trigger immediate UI update
+                    if (document.readyState !== 'loading') {
+                        this.updateAllFavoriteButtons();
+                    } else {
+                        document.addEventListener('DOMContentLoaded', () => this.updateAllFavoriteButtons());
+                    }
+                } catch (e) {
+                    console.error('Error parsing cached favorites:', e);
+                }
+            }
+        }
     }
 
     async initialize() {
@@ -43,38 +63,49 @@ class FavoritesManager {
         }
         
         try {
-            // Fetch all users' data
+            // First load from sessionStorage for immediate display
+            const cachedData = sessionStorage.getItem(`favorites_${user.id}`);
+            if (cachedData) {
+                const parsedData = JSON.parse(cachedData);
+                this.favorites = new Map(parsedData);
+                // Dispatch initial load event
+                window.dispatchEvent(new CustomEvent('favoritesLoaded'));
+            }
+
+            // Then check server for updates
             const response = await fetch(`${this.STORAGE_URL}?apiKey=${this.API_KEY}`);
             if (!response.ok) {
                 throw new Error('Failed to fetch users data');
             }
             const data = await response.json();
             
-            // Find current user's favorites
             const userData = data.users?.find(u => u.id === user.id);
             if (userData?.favorites) {
-                this.favorites = new Map(Object.entries(userData.favorites));
-            } else {
-                this.favorites = new Map();
-            }
-            
-            // Dispatch event when favorites are loaded
-            window.dispatchEvent(new CustomEvent('favoritesLoaded'));
-        } catch (error) {
-            console.error('Error loading favorites from cloud:', error);
-            // Fallback to local storage
-            const storedFavorites = localStorage.getItem(`favorites_${user.id}`);
-            if (storedFavorites) {
-                try {
-                    const favoritesArray = JSON.parse(storedFavorites);
-                    this.favorites = new Map(favoritesArray);
-                } catch (e) {
-                    console.error('Error loading favorites from local storage:', e);
-                    this.favorites = new Map();
+                const serverFavorites = new Map(Object.entries(userData.favorites));
+                // Update cache and state if server data is different
+                if (JSON.stringify([...serverFavorites]) !== JSON.stringify([...this.favorites])) {
+                    this.favorites = serverFavorites;
+                    sessionStorage.setItem(`favorites_${user.id}`, JSON.stringify([...this.favorites]));
+                    // Dispatch update event
+                    window.dispatchEvent(new CustomEvent('favoritesLoaded'));
                 }
             }
-            // Always dispatch event, even on error
-            window.dispatchEvent(new CustomEvent('favoritesLoaded'));
+        } catch (error) {
+            console.error('Error loading favorites from cloud:', error);
+            // Fallback to local storage if server request fails
+            if (!cachedData) {  // Only check localStorage if no sessionStorage data
+                const storedFavorites = localStorage.getItem(`favorites_${user.id}`);
+                if (storedFavorites) {
+                    try {
+                        const favoritesArray = JSON.parse(storedFavorites);
+                        this.favorites = new Map(favoritesArray);
+                        window.dispatchEvent(new CustomEvent('favoritesLoaded'));
+                    } catch (e) {
+                        console.error('Error loading favorites from local storage:', e);
+                        this.favorites = new Map();
+                    }
+                }
+            }
         }
     }
 
@@ -82,15 +113,17 @@ class FavoritesManager {
         const user = window.userManager?.getCurrentUser();
         if (!user) return;
         
+        // Update sessionStorage immediately
+        sessionStorage.setItem(`favorites_${user.id}`, JSON.stringify([...this.favorites]));
+        
         try {
-            // First get all users' data
+            // Then update server
             const response = await fetch(`${this.STORAGE_URL}?apiKey=${this.API_KEY}`);
             if (!response.ok) {
                 throw new Error('Failed to fetch users data');
             }
             const data = await response.json();
             
-            // Update current user's favorites
             const userIndex = data.users?.findIndex(u => u.id === user.id);
             if (userIndex !== -1) {
                 if (!data.users[userIndex].favorites) {
@@ -98,7 +131,6 @@ class FavoritesManager {
                 }
                 data.users[userIndex].favorites = Object.fromEntries(this.favorites);
                 
-                // Save back to JSONStorage
                 const updateResponse = await fetch(`${this.STORAGE_URL}?apiKey=${this.API_KEY}`, {
                     method: 'PUT',
                     headers: {
@@ -221,15 +253,19 @@ class FavoritesManager {
     }
 
     updateAllFavoriteButtons() {
+        // Skip if document isn't ready
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', () => this.updateAllFavoriteButtons());
+            return;
+        }
+
         try {
-            // Find all favorite buttons in the DOM
             const favoriteButtons = document.querySelectorAll('.favorite-btn');
             favoriteButtons?.forEach(button => {
-                if (!button) return;  // Skip if button is null
+                if (!button) return;
                 const mediaId = button.dataset?.favoriteId;
                 if (mediaId) {
                     const isFavorited = this.isFavorite(mediaId);
-                    // Use try-catch for classList operations
                     try {
                         button.classList.toggle('favorited', isFavorited);
                         button.setAttribute('title', isFavorited ? 'Remove from favorites' : 'Add to favorites');
