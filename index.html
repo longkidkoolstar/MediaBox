@@ -16,30 +16,38 @@
         .js-loading {
             visibility: hidden;
         }
-        
+
         /* Default light theme variables */
         :root {
             --background-color: var(--background-light);
             --text-color: var(--text-light);
         }
-        
+
         /* Dark theme variables */
         :root[data-theme="dark"] {
             --background-color: var(--background-dark);
             --text-color: var(--text-dark);
         }
-        
+
         /* Apply theme colors immediately */
         body {
             background-color: var(--background-color);
             color: var(--text-color);
             transition: none;
+            background-image:
+                radial-gradient(circle at 25px 25px, rgba(59, 130, 246, 0.05) 2%, transparent 0%),
+                radial-gradient(circle at 75px 75px, rgba(139, 92, 246, 0.05) 2%, transparent 0%);
+            background-size: 100px 100px;
+            background-attachment: fixed;
         }
-        
+
         /* Update inline styles to match CSS dark mode implementation */
         body.dark-mode {
             background-color: var(--background-dark);
             color: var(--text-dark);
+            background-image:
+                radial-gradient(circle at 25px 25px, rgba(16, 185, 129, 0.05) 2%, transparent 0%),
+                radial-gradient(circle at 75px 75px, rgba(139, 92, 246, 0.05) 2%, transparent 0%);
         }
     </style>
     <script>
@@ -74,14 +82,14 @@
                 <button class="auth-tab active" data-tab="signin">Sign In</button>
                 <button class="auth-tab" data-tab="signup">Sign Up</button>
             </div>
-            
+
             <!-- Sign In Form -->
             <form id="signinForm" class="auth-form">
                 <input type="text" placeholder="Username or Email" required>
                 <input type="password" placeholder="Password" required>
                 <button type="submit">Sign In</button>
             </form>
-            
+
             <!-- Sign Up Form -->
             <form id="signupForm" class="auth-form" style="display: none;">
                 <input type="text" placeholder="Username" required>
