@@ -100,9 +100,9 @@ class FeaturedContent {
         const rating = typeof item.rating === 'number' ? item.rating.toFixed(1) : 'N/A';
         
         return `
-            <div class="media-card" data-id="${item.id}" data-media-type="${item.type}">
+            <div class="media-card" data-id="${item.id}" data-media-type="${item.type}" onclick="handleMediaClick('${item.type}', ${item.id}, '${(item.title || '').replace(/'/g, "\\'")}')">
                 ${window.favoritesManager?.createFavoriteButton(item.id) || ''}
-                <div class="media-content" onclick="handleMediaClick('${item.type}', ${item.id}, '${(item.title || '').replace(/'/g, "\\'")}')">
+                <div class="media-content">
                     <img src="${imageUrl}" alt="${item.title || 'Untitled'}" loading="lazy" onerror="this.src='${defaultImage}'">
                     <div class="media-title">${item.title || 'Untitled'}</div>
                     <div class="media-rating">★ ${rating}</div>

@@ -139,10 +139,10 @@ class SearchPage {
                 ? 'images/no-poster.svg' // Use no-poster.svg if it is the placeholder
                 : item.image; // Otherwise, use the original image
 
-            return `
-                <div class="media-card">
+                return `
+                <div class="media-card" onclick="window.searchPage.handleMediaClick('${item.type}', ${item.id}, '${item.title.replace(/'/g, "\\'")}')">
                     ${window.favoritesManager?.createFavoriteButton(item.id) || ''}
-                    <div class="media-content" onclick="window.searchPage.handleMediaClick('${item.type}', ${item.id}, '${item.title.replace(/'/g, "\\'")}')">
+                    <div class="media-content">
                         <img src="${imageUrl}" alt="${item.title}" loading="lazy">
                         <div class="media-year">${item.year || 'N/A'}</div>
                         <div class="media-info">
