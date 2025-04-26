@@ -4,7 +4,7 @@ class FavoritesManager {
         this.initialized = false;
         this.API_KEY = '4994e33a-c36e-414e-917d-6918eddd782a';
         this.STORAGE_URL = 'https://api.jsonstorage.net/v1/json/d206ce58-9543-48db-a5e4-997cfc745ef3/d44110a3-258b-4d92-8169-84e5531fa02b';
-        
+
         // Immediately try to load cached favorites
         const user = window.userManager?.getCurrentUser();
         if (user) {
@@ -38,18 +38,18 @@ class FavoritesManager {
             await new Promise(resolve => setTimeout(resolve, 100));
             return this.initialize();
         }
-        
+
         // Setup event listeners first
         this.setupEventListeners();
-        
+
         // Then load favorites
         await this.loadFavorites();
-        
+
         this.initialized = true;
-        
+
         // Update all favorite buttons in the DOM
         this.updateAllFavoriteButtons();
-        
+
         // Dispatch initialized event
         window.dispatchEvent(new CustomEvent('favoritesInitialized'));
     }
@@ -61,7 +61,7 @@ class FavoritesManager {
             window.dispatchEvent(new CustomEvent('favoritesLoaded'));
             return;
         }
-        
+
         try {
             // First load from sessionStorage for immediate display
             const cachedData = sessionStorage.getItem(`favorites_${user.id}`);
@@ -78,7 +78,7 @@ class FavoritesManager {
                 throw new Error('Failed to fetch users data');
             }
             const data = await response.json();
-            
+
             const userData = data.users?.find(u => u.id === user.id);
             if (userData?.favorites) {
                 const serverFavorites = new Map(Object.entries(userData.favorites));
@@ -112,10 +112,10 @@ class FavoritesManager {
     async saveFavorites() {
         const user = window.userManager?.getCurrentUser();
         if (!user) return;
-        
+
         // Update sessionStorage immediately
         sessionStorage.setItem(`favorites_${user.id}`, JSON.stringify([...this.favorites]));
-        
+
         try {
             // Then update server
             const response = await fetch(`${this.STORAGE_URL}?apiKey=${this.API_KEY}`);
@@ -123,14 +123,14 @@ class FavoritesManager {
                 throw new Error('Failed to fetch users data');
             }
             const data = await response.json();
-            
+
             const userIndex = data.users?.findIndex(u => u.id === user.id);
             if (userIndex !== -1) {
                 if (!data.users[userIndex].favorites) {
                     data.users[userIndex].favorites = {};
                 }
                 data.users[userIndex].favorites = Object.fromEntries(this.favorites);
-                
+
                 const updateResponse = await fetch(`${this.STORAGE_URL}?apiKey=${this.API_KEY}`, {
                     method: 'PUT',
                     headers: {
@@ -138,7 +138,7 @@ class FavoritesManager {
                     },
                     body: JSON.stringify(data)
                 });
-                
+
                 if (!updateResponse.ok) {
                     throw new Error('Failed to update favorites in cloud storage');
                 }
@@ -146,38 +146,50 @@ class FavoritesManager {
         } catch (error) {
             console.error('Error saving favorites to cloud:', error);
         }
-        
+
         // Always save to local storage as backup
         const favoritesArray = Array.from(this.favorites.entries());
         localStorage.setItem(`favorites_${user.id}`, JSON.stringify(favoritesArray));
     }
 
     async toggleFavorite(mediaId, mediaData) {
+        console.log('toggleFavorite called for mediaId:', mediaId);
+
         if (!window.userManager?.getCurrentUser()) {
+            console.log('User not logged in, showing auth modal');
             document.getElementById('authModal').style.display = 'block';
             return false;
         }
 
         // Update local state and UI immediately
-        if (this.favorites.has(mediaId)) {
+        const wasFavorite = this.favorites.has(mediaId);
+        console.log('Was favorite before:', wasFavorite);
+
+        if (wasFavorite) {
+            console.log('Removing from favorites');
             this.favorites.delete(mediaId);
-            this.updateAllFavoriteButtons();
         } else {
+            console.log('Adding to favorites');
             this.favorites.set(mediaId, mediaData);
         }
-        
+
         // Update UI immediately
         this.updateFavoriteButton(mediaId);
-        
+        this.updateAllFavoriteButtons();
+
         // Update favorites section if it exists
         if (window.featuredContent) {
+            console.log('Updating favorites section');
             window.featuredContent.updateFavoritesSection();
         }
 
         // Save changes asynchronously
+        console.log('Saving favorites');
         await this.saveFavorites();
-        
-        return this.isFavorite(mediaId);
+
+        const isFavoriteNow = this.isFavorite(mediaId);
+        console.log('Is favorite after toggle:', isFavoriteNow);
+        return isFavoriteNow;
     }
 
     isFavorite(mediaId) {
@@ -197,8 +209,9 @@ class FavoritesManager {
     createFavoriteButton(mediaId) {
         const isFavorited = this.isFavorite(mediaId);
         return `
-            <button class="favorite-btn ${isFavorited ? 'favorited' : ''}" 
+            <button class="favorite-btn ${isFavorited ? 'favorited' : ''}"
                     data-favorite-id="${mediaId}"
+                    onclick="event.stopPropagation(); window.favoritesManager.handleFavoriteClick(this, event);"
                     title="${isFavorited ? 'Remove from favorites' : 'Add to favorites'}">
                 <i class="fas fa-heart"></i>
             </button>
@@ -209,20 +222,37 @@ class FavoritesManager {
         return Array.from(this.favorites.values());
     }
 
+    async handleFavoriteClick(button, event) {
+        // Ensure the event doesn't bubble up to parent elements
+        event.stopPropagation();
+
+        console.log('Favorite button clicked directly:', button);
+
+        const favoriteBtn = button;
+        const mediaId = favoriteBtn.dataset.favoriteId;
+        const mediaCard = favoriteBtn.closest('.media-card');
+
+        if (mediaCard) {
+            const mediaData = {
+                id: mediaId,
+                title: mediaCard.querySelector('.media-title')?.textContent,
+                poster: mediaCard.querySelector('img')?.src,
+                type: mediaCard.dataset.mediaType || (mediaCard.dataset.mediaType = mediaCard.classList.contains('movie-card') ? 'movie' : 'tv')
+            };
+            console.log('Toggling favorite for:', mediaData);
+            await this.toggleFavorite(mediaId, mediaData);
+        }
+    }
+
     setupEventListeners() {
+        // Keep this for backward compatibility with any buttons that don't have the direct handler
         document.addEventListener('click', async (e) => {
             if (e.target.closest('.favorite-btn')) {
-                const favoriteBtn = e.target.closest('.favorite-btn');
-                const mediaId = favoriteBtn.dataset.favoriteId;
-                const mediaCard = favoriteBtn.closest('.media-card');
-                if (mediaCard) {
-                    const mediaData = {
-                        id: mediaId,
-                        title: mediaCard.querySelector('.media-title')?.textContent,
-                        poster: mediaCard.querySelector('img')?.src,
-                        type: mediaCard.dataset.mediaType || (mediaCard.dataset.mediaType = mediaCard.classList.contains('movie-card') ? 'movie' : 'tv')
-                    };
-                    await this.toggleFavorite(mediaId, mediaData);
+                // Only handle clicks that don't have the direct handler
+                const button = e.target.closest('.favorite-btn');
+                if (!button.hasAttribute('onclick')) {
+                    e.stopPropagation();
+                    await this.handleFavoriteClick(button, e);
                 }
             }
         });

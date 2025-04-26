@@ -10,7 +10,7 @@ class FeaturedContent {
         this.popularMovies = [];
         this.trendingShows = [];
         this.latestAnime = [];
-        
+
         // Listen for favorites events
         window.addEventListener('favoritesLoaded', () => {
             // Update favorite buttons when favorites are loaded
@@ -20,10 +20,10 @@ class FeaturedContent {
                 this.updateFavoritesSection();
             }
         });
-        
+
         // Initialize favorites after ensuring favoritesManager is ready
         this.initializeFavorites();
-        
+
         // Start content refresh check
         this.startContentRotation();
     }
@@ -98,11 +98,11 @@ class FeaturedContent {
         const defaultImage = 'images/no-poster.svg';
         const imageUrl = item.image || item.poster || defaultImage;
         const rating = typeof item.rating === 'number' ? item.rating.toFixed(1) : 'N/A';
-        
+
         return `
-            <div class="media-card" data-id="${item.id}" data-media-type="${item.type}" onclick="handleMediaClick('${item.type}', ${item.id}, '${(item.title || '').replace(/'/g, "\\'")}')">
+            <div class="media-card" data-id="${item.id}" data-media-type="${item.type}">
                 ${window.favoritesManager?.createFavoriteButton(item.id) || ''}
-                <div class="media-content">
+                <div class="media-content" onclick="handleMediaClick('${item.type}', ${item.id}, '${(item.title || '').replace(/'/g, "\\'")}')">
                     <img src="${imageUrl}" alt="${item.title || 'Untitled'}" loading="lazy" onerror="this.src='${defaultImage}'">
                     <div class="media-title">${item.title || 'Untitled'}</div>
                     <div class="media-rating">★ ${rating}</div>
@@ -143,10 +143,10 @@ class FeaturedContent {
 
     async updateFavoritesSection() {
         if (!window.favoritesManager) return;
-        
+
         const favorites = window.favoritesManager.getAllFavorites();
         let favoritesSection = document.querySelector('.favorites-section');
-        
+
         if (!favoritesSection) {
             favoritesSection = document.createElement('section');
             favoritesSection.className = 'favorites-section';
@@ -161,17 +161,17 @@ class FeaturedContent {
         if (favorites && favorites.length > 0) {
             // Display only first 5 favorites
             const displayedFavorites = favorites.slice(0, 5);
-            
+
             // Fetch current ratings for each favorite
             const updatedFavorites = await Promise.all(displayedFavorites.map(async item => {
                 try {
-                    const endpoint = item.type === 'movie' 
+                    const endpoint = item.type === 'movie'
                         ? `https://api.themoviedb.org/3/movie/${item.id}`
                         : `https://api.themoviedb.org/3/tv/${item.id}`;
-                    
+
                     const response = await fetch(`${endpoint}?api_key=${this.apiKey}`);
                     if (!response.ok) throw new Error('Failed to fetch rating');
-                    
+
                     const data = await response.json();
                     return {
                         ...item,
@@ -182,9 +182,9 @@ class FeaturedContent {
                     return item; // Return original item if fetch fails
                 }
             }));
-            
+
             favoritesContent.innerHTML = updatedFavorites.map(item => this.createMediaCard(item)).join('');
-            
+
             // Add "See More" link if there are more than 5 favorites
             if (favorites.length > 5) {
                 const seeMoreDiv = document.createElement('div');
@@ -204,7 +204,7 @@ class FeaturedContent {
     startContentRotation() {
         const lastRefresh = localStorage.getItem('lastContentRefresh');
         const currentTime = Date.now();
-        
+
         // If no last refresh or 24 hours have passed, fetch new content
         if (!lastRefresh || (currentTime - parseInt(lastRefresh)) >= this.refreshInterval) {
             this.fetchTMDBContent();
@@ -244,7 +244,7 @@ window.featuredContent = new FeaturedContent();
 function handleMediaClick(type, id, title) {
     // Store the selected media info
     localStorage.setItem('selectedMedia', JSON.stringify({ type, id, title }));
-    
+
     // Treat anime as TV shows for playback
     if (type === 'tv' || type === 'anime') {
         const userWatchProgress = window.userManager?.currentUser?.watchProgress || {};
@@ -280,7 +280,7 @@ document.getElementById('searchInput')?.addEventListener('keypress', function(e)
 document.getElementById('searchInput')?.addEventListener('input', function(e) {
     const resultsContainer = document.getElementById('resultsContainer');
     if (!resultsContainer) return;
-    
+
     if (e.target.value.trim() === '') {
         resultsContainer.innerHTML = '';
         window.featuredContent.show();

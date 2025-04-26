@@ -5,10 +5,10 @@ class SearchPage {
         this.searchBtn = document.getElementById('searchBtn');
         this.resultsContainer = document.getElementById('resultsContainer');
         this.filterBtns = document.querySelectorAll('.filter-btn');
-        
+
         this.currentFilter = 'all';
         this.searchResults = [];
-        
+
         this.initialize();
     }
 
@@ -16,7 +16,7 @@ class SearchPage {
         // Get search query from URL
         const urlParams = new URLSearchParams(window.location.search);
         const query = urlParams.get('q');
-        
+
         if (query) {
             this.searchInput.value = query;
             this.performSearch(query);
@@ -47,7 +47,7 @@ class SearchPage {
             // Update URL with search query
             const newUrl = `${window.location.pathname}?q=${encodeURIComponent(query)}`;
             window.history.pushState({ path: newUrl }, '', newUrl);
-            
+
             await this.performSearch(query);
         }
     }
@@ -55,13 +55,13 @@ class SearchPage {
     async performSearch(query) {
         try {
             this.resultsContainer.innerHTML = '<div class="loading">Searching...</div>';
-            
+
             // Search movies
             const movieResponse = await fetch(
                 `https://api.themoviedb.org/3/search/movie?api_key=${this.apiKey}&query=${encodeURIComponent(query)}`
             );
             const movieData = await movieResponse.json();
-            
+
             // Search TV shows
             const tvResponse = await fetch(
                 `https://api.themoviedb.org/3/search/tv?api_key=${this.apiKey}&query=${encodeURIComponent(query)}`
@@ -69,13 +69,13 @@ class SearchPage {
             const tvData = await tvResponse.json();
 
             // For each TV result, fetch additional details to check if it's anime
-            const tvDetailsPromises = tvData.results.map(show => 
+            const tvDetailsPromises = tvData.results.map(show =>
                 fetch(`https://api.themoviedb.org/3/tv/${show.id}?api_key=${this.apiKey}&append_to_response=keywords`)
                     .then(res => res.json())
             );
-            
+
             const tvDetails = await Promise.all(tvDetailsPromises);
-            
+
             // Anime-related keywords and genres
             const animeKeywords = [210024, 6075]; // anime, japanese animation
             const animeGenres = [16]; // animation
@@ -116,8 +116,8 @@ class SearchPage {
     }
 
     filterResults() {
-        const filteredResults = this.currentFilter === 'all' 
-            ? this.searchResults 
+        const filteredResults = this.currentFilter === 'all'
+            ? this.searchResults
             : this.searchResults.filter(item => item.type === this.currentFilter);
 
         this.displayResults(filteredResults);
@@ -140,9 +140,9 @@ class SearchPage {
                 : item.image; // Otherwise, use the original image
 
                 return `
-                <div class="media-card" onclick="window.searchPage.handleMediaClick('${item.type}', ${item.id}, '${item.title.replace(/'/g, "\\'")}')">
+                <div class="media-card" data-media-type="${item.type}">
                     ${window.favoritesManager?.createFavoriteButton(item.id) || ''}
-                    <div class="media-content">
+                    <div class="media-content" onclick="window.searchPage.handleMediaClick('${item.type}', ${item.id}, '${item.title.replace(/'/g, "\\'")}')">
                         <img src="${imageUrl}" alt="${item.title}" loading="lazy">
                         <div class="media-year">${item.year || 'N/A'}</div>
                         <div class="media-info">
@@ -180,7 +180,7 @@ class SearchPage {
     handleMediaClick(type, id, title) {
         // Store the selected media info
         localStorage.setItem('selectedMedia', JSON.stringify({ type, id, title }));
-        
+
         // Navigate to player page
         if (type === 'tv' || type === 'anime') {
             // Retrieve the user's watch progress if logged in
