@@ -140,9 +140,9 @@ class SearchPage {
                 : item.image; // Otherwise, use the original image
 
                 return `
-                <div class="media-card" data-media-type="${item.type}">
+                <div class="media-card" data-media-type="${item.type}" onclick="window.searchPage.handleMediaClick('${item.type}', ${item.id}, '${item.title.replace(/'/g, "\\'")}')">
                     ${window.favoritesManager?.createFavoriteButton(item.id) || ''}
-                    <div class="media-content" onclick="window.searchPage.handleMediaClick('${item.type}', ${item.id}, '${item.title.replace(/'/g, "\\'")}')">
+                    <div class="media-content">
                         <img src="${imageUrl}" alt="${item.title}" loading="lazy">
                         <div class="media-year">${item.year || 'N/A'}</div>
                         <div class="media-info">
