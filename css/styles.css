@@ -796,7 +796,6 @@ body.dark-mode .media-card:hover {
 
     .back-button {
         position: relative;
-        width: 100%;
         margin-bottom: 10px;
     }
 }
@@ -889,13 +888,11 @@ body.dark-mode .media-card:hover {
 
 /* Additional responsive adjustments */
 @media (max-width: 768px) {
-    button {
-        width: 100%;
-    }
 
-    main {
+  main {
         padding: 0 0.5rem;
     }
+    
 }
 
 @media screen and (max-width: 480px) {
