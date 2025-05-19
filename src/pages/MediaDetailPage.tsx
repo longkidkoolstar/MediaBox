@@ -374,9 +374,11 @@ export function MediaDetailPage() {
                           <div className="p-4">
                             <h3 className="font-medium">{season.name}</h3>
                             <p className="text-sm text-muted-foreground mb-2">{season.episode_count} episodes</p>
-                            <Link to={`/${mediaType}/${id}/season/${season.season_number}`} className="text-primary text-sm hover:underline">
-                              View Episodes
-                            </Link>
+                            <Button variant="link" className="text-primary p-0 h-auto" asChild>
+                              <Link to={`/${mediaType}/${id}/season/${season.season_number}`}>
+                                View Episodes
+                              </Link>
+                            </Button>
                           </div>
                         </div>
                       ))}

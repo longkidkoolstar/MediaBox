@@ -14,6 +14,7 @@ const MoviesPage = lazy(() => import("./pages/MoviesPage"));
 const TVShowsPage = lazy(() => import("./pages/TVShowsPage"));
 const AnimePage = lazy(() => import("./pages/AnimePage"));
 const MediaDetailPage = lazy(() => import("./pages/MediaDetailPage"));
+const SeasonPage = lazy(() => import("./pages/SeasonPage"));
 const WatchPage = lazy(() => import("./pages/WatchPage"));
 const SearchPage = lazy(() => import("./pages/SearchPage"));
 const ProfilePage = lazy(() => import("./pages/ProfilePage"));
@@ -91,6 +92,7 @@ const App = () => {
                 <Route path="/anime" element={<AnimePage />} />
                 <Route path="/search" element={<SearchPage />} />
                 <Route path="/:mediaType/:id" element={<MediaDetailPage />} />
+                <Route path="/:mediaType/:id/season/:seasonNumber" element={<SeasonPage />} />
                 <Route path="/:mediaType/:id/watch" element={<WatchPage />} />
                 <Route
                   path="/profile"
