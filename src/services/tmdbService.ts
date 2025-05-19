@@ -232,12 +232,20 @@ export const getMultipleMediaDetails = async (mediaItems: { id: number; media_ty
           // Get details based on media type
           if (media_type === 'movie') {
             return getMovieDetails(id.toString())
-              .then(data => ({ ...data, media_type: 'movie' }))
+              .then(data => ({
+                ...data,
+                media_type: 'movie',
+                title: data.title || 'Unknown Title'
+              }))
               .catch(() => null);
           } else {
             // For TV or anime
             return getTVShowDetails(id.toString())
-              .then(data => ({ ...data, media_type }))
+              .then(data => ({
+                ...data,
+                media_type,
+                title: data.name || data.title || 'Unknown Title'
+              }))
               .catch(() => null);
           }
         } catch (err) {
@@ -272,14 +280,22 @@ export const getMultipleMediaDetailsByIds = async (mediaIds: number[]) => {
         try {
           // Try as movie first
           const movieData = await getMovieDetails(id.toString())
-            .then(data => ({ ...data, media_type: 'movie' }))
+            .then(data => ({
+              ...data,
+              media_type: 'movie',
+              title: data.title || 'Unknown Title'
+            }))
             .catch(() => null);
 
           if (movieData) return movieData;
 
           // If not a movie, try as TV show
           const tvData = await getTVShowDetails(id.toString())
-            .then(data => ({ ...data, media_type: 'tv' }))
+            .then(data => ({
+              ...data,
+              media_type: 'tv',
+              title: data.name || data.title || 'Unknown Title'
+            }))
             .catch(() => null);
 
           return tvData;

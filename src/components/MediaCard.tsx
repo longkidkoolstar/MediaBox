@@ -75,7 +75,7 @@ export function MediaCard({ item, priority = false }: MediaCardProps) {
               </div>
               {year && <span className="text-white text-sm">{year}</span>}
             </div>
-            <h3 className="text-white font-medium mt-1 line-clamp-2">{item.title}</h3>
+            <h3 className="text-white font-medium mt-1 line-clamp-2 text-shadow">{item.title || "Unknown Title"}</h3>
           </div>
         </div>
       </Link>
