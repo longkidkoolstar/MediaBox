@@ -3,6 +3,7 @@ import { Layout } from "../components/Layout";
 import { Button } from "../components/ui/button";
 import { Heart, Loader2, Trash2 } from "lucide-react";
 import { MediaCard } from "../components/MediaCard";
+import { MediaGrid } from "../components/MediaGrid";
 import { toast } from "sonner";
 import { useAuth } from "../contexts/AuthContext";
 import { useNavigate } from "react-router-dom";
@@ -82,19 +83,27 @@ export function FavoritesPage() {
         </div>
 
         {favoriteItems.length > 0 ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
-            {favoriteItems.map((item) => (
-              <div key={`${item.id}-${item.media_type}`} className="relative group">
-                <MediaCard item={item} />
-                <button
-                  onClick={() => handleRemoveFavorite(item)}
-                  className="absolute top-2 right-2 bg-black/70 p-2 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
-                  disabled={isProcessing}
-                >
-                  <Trash2 className="h-4 w-4 text-white" />
-                </button>
+          <div className="relative">
+            <MediaGrid items={favoriteItems} />
+            {/* Add remove buttons on top of the MediaGrid */}
+            <div className="absolute top-0 left-0 w-full h-full pointer-events-none">
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4 md:gap-6 py-6">
+                {favoriteItems.map((item) => (
+                  <div key={`${item.id}-${item.media_type}`} className="relative group h-full">
+                    <button
+                      onClick={(e) => {
+                        e.preventDefault();
+                        handleRemoveFavorite(item);
+                      }}
+                      className="absolute top-2 right-2 bg-black/70 p-2 rounded-full opacity-0 group-hover:opacity-100 transition-opacity pointer-events-auto z-20"
+                      disabled={isProcessing}
+                    >
+                      <Trash2 className="h-4 w-4 text-white" />
+                    </button>
+                  </div>
+                ))}
               </div>
-            ))}
+            </div>
           </div>
         ) : (
           <div className="text-center py-12 bg-card border border-border rounded-lg">
