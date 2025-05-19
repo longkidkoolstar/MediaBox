@@ -1,0 +1,48 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Common functions
+    function isSignedIn() {
+      return request.auth != null;
+    }
+    
+    function isOwner(userId) {
+      return request.auth.uid == userId;
+    }
+    
+    // User profiles
+    match /users/{userId} {
+      // Users can read and update their own profiles
+      allow read: if isSignedIn() && isOwner(userId);
+      allow create: if isSignedIn() && isOwner(userId);
+      allow update: if isSignedIn() && isOwner(userId);
+      allow delete: if false; // Don't allow user deletion through client
+    }
+    
+    // Custom lists
+    match /lists/{listId} {
+      // Users can read, create, update, and delete their own lists
+      allow read: if isSignedIn() && resource.data.userId == request.auth.uid;
+      allow create: if isSignedIn() && request.resource.data.userId == request.auth.uid;
+      allow update: if isSignedIn() && resource.data.userId == request.auth.uid;
+      allow delete: if isSignedIn() && resource.data.userId == request.auth.uid;
+    }
+    
+    // TMDB API cache
+    match /tmdb_cache/{cacheId} {
+      // Anyone can read the cache
+      allow read: if true;
+      // Only authenticated users can create/update cache entries
+      allow create, update: if isSignedIn();
+      allow delete: if false; // Don't allow cache deletion through client
+    }
+    
+    // Recommendations
+    match /recommendations/{recId} {
+      // Users can read their own recommendations
+      allow read: if isSignedIn() && resource.data.userId == request.auth.uid;
+      // Only the system can create/update recommendations
+      allow create, update, delete: if false;
+    }
+  }
+}

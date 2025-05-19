@@ -1,0 +1,7 @@
+{
+  "name": "mediabox-scripts",
+  "version": "1.0.0",
+  "description": "Scripts for MediaBox",
+  "type": "module",
+  "private": true
+}
