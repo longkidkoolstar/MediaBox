@@ -95,6 +95,7 @@ export function WatchPage() {
   let title = detail?.title || "";
   let nextEpisode;
   let prevEpisode;
+  let currentEpisode: any;
 
   if ((mediaType === "tv" || mediaType === "anime") && detail && seasonData) {
     // Use the season name from the season data
@@ -102,7 +103,7 @@ export function WatchPage() {
 
     // Find current episode
     if (seasonData.episodes && Array.isArray(seasonData.episodes)) {
-      const currentEpisode = seasonData.episodes.find((e: any) => e.episode_number === episodeNumber);
+      currentEpisode = seasonData.episodes.find((e: any) => e.episode_number === episodeNumber);
 
       if (currentEpisode) {
         title = `${detail.title} - ${seasonName}, Episode ${episodeNumber}: ${currentEpisode.name}`;
@@ -134,7 +135,7 @@ export function WatchPage() {
     }
 
     // If no next episode in current season, check if there's a next season
-    if (!nextEpisode && detail.seasons) {
+    if (!nextEpisode && (mediaType === "tv" || mediaType === "anime") && 'seasons' in detail && detail.seasons) {
       // Sort seasons by season_number to ensure we get the correct next season
       const sortedSeasons = [...detail.seasons].sort((a, b) => a.season_number - b.season_number);
       const currentSeasonIndex = sortedSeasons.findIndex(s => s.season_number === seasonNumber);
@@ -154,7 +155,7 @@ export function WatchPage() {
     }
 
     // If no previous episode in current season, check if there's a previous season
-    if (!prevEpisode && seasonNumber > 1 && detail.seasons) {
+    if (!prevEpisode && seasonNumber > 1 && (mediaType === "tv" || mediaType === "anime") && 'seasons' in detail && detail.seasons) {
       // Sort seasons by season_number to ensure we get the correct previous season
       const sortedSeasons = [...detail.seasons].sort((a, b) => a.season_number - b.season_number);
       const currentSeasonIndex = sortedSeasons.findIndex(s => s.season_number === seasonNumber);
@@ -198,7 +199,11 @@ export function WatchPage() {
             {seasonNumber && episodeNumber && ` • Season ${seasonNumber}, Episode ${episodeNumber}`}
           </p>
 
-          <p className="text-muted-foreground">{detail.overview}</p>
+          <p className="text-muted-foreground">
+            {(mediaType === "tv" || mediaType === "anime") && currentEpisode ?
+              currentEpisode.overview || detail.overview
+              : detail.overview}
+          </p>
         </div>
       </div>
     </Layout>
