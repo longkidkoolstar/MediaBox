@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { Layout } from "../components/Layout";
 import { VideoPlayer } from "../components/VideoPlayer";
 import { Loader2 } from "lucide-react";
-import { useMovieDetails, useTVShowDetails } from "../hooks/useTMDB";
+import { useMovieDetails, useTVShowDetails, useTVSeasonDetails } from "../hooks/useTMDB";
 import { useVideoSources } from "../hooks/useVideoSources";
 import { useWatchHistory } from "../hooks/useWatchHistory";
 import { useAuth } from "../contexts/AuthContext";
@@ -28,6 +28,12 @@ export function WatchPage() {
   const { data: tvData, isLoading: tvLoading, error: tvError } =
     useTVShowDetails((mediaType === "tv" || mediaType === "anime") ? id || "" : "");
 
+  // Fetch season details for TV shows
+  const { data: seasonData, isLoading: seasonLoading } = useTVSeasonDetails(
+    (mediaType === "tv" || mediaType === "anime") ? id || "" : "",
+    (mediaType === "tv" || mediaType === "anime") ? seasonNumber : 0
+  );
+
   // Get video sources
   const { sources, isLoading: sourcesLoading } = useVideoSources(
     mediaType as any,
@@ -36,7 +42,7 @@ export function WatchPage() {
     (mediaType === "tv" || mediaType === "anime") ? episodeNumber : undefined
   );
 
-  const isLoading = movieLoading || tvLoading || sourcesLoading;
+  const isLoading = movieLoading || tvLoading || sourcesLoading || (mediaType !== "movie" && seasonLoading);
   const error = movieError || tvError;
   const detail = mediaType === "movie" ? movieData : tvData;
 
@@ -86,39 +92,84 @@ export function WatchPage() {
   };
 
   // For TV/Anime, check if we have episode data
-  let title = detail.title;
+  let title = detail?.title || "";
   let nextEpisode;
+  let prevEpisode;
 
-  if (mediaType === "tv" || mediaType === "anime") {
-    const currentSeason = detail.seasons?.find((s: any) => s.season_number === seasonNumber);
-    if (currentSeason) {
-      // Check if episodes array exists before trying to access it
-      if (currentSeason.episodes && Array.isArray(currentSeason.episodes)) {
-        const currentEpisode = currentSeason.episodes.find((e: any) => e.episode_number === episodeNumber);
-        if (currentEpisode) {
-          title = `${detail.title} - ${currentSeason.name}, Episode ${episodeNumber}: ${currentEpisode.name}`;
+  if ((mediaType === "tv" || mediaType === "anime") && detail && seasonData) {
+    // Use the season name from the season data
+    const seasonName = seasonData.name || `Season ${seasonNumber}`;
+
+    // Find current episode
+    if (seasonData.episodes && Array.isArray(seasonData.episodes)) {
+      const currentEpisode = seasonData.episodes.find((e: any) => e.episode_number === episodeNumber);
+
+      if (currentEpisode) {
+        title = `${detail.title} - ${seasonName}, Episode ${episodeNumber}: ${currentEpisode.name}`;
+
+        // Check for next episode in the same season
+        const nextEpisodeIndex = seasonData.episodes.findIndex((e: any) => e.episode_number === episodeNumber + 1);
+        if (nextEpisodeIndex !== -1) {
+          const nextEpisodeData = seasonData.episodes[nextEpisodeIndex];
+          nextEpisode = {
+            id: nextEpisodeData.id,
+            seasonNumber,
+            episodeNumber: nextEpisodeData.episode_number
+          };
+          console.log("Found next episode:", nextEpisode);
         }
 
-        // Check for next episode
-        const nextEpisodeInSeason = currentSeason.episodes.find((e: any) => e.episode_number === episodeNumber + 1);
-        if (nextEpisodeInSeason) {
-          nextEpisode = {
-            id: nextEpisodeInSeason.id,
+        // Check for previous episode in the same season
+        const prevEpisodeIndex = seasonData.episodes.findIndex((e: any) => e.episode_number === episodeNumber - 1);
+        if (prevEpisodeIndex !== -1) {
+          const prevEpisodeData = seasonData.episodes[prevEpisodeIndex];
+          prevEpisode = {
+            id: prevEpisodeData.id,
             seasonNumber,
-            episodeNumber: episodeNumber + 1
+            episodeNumber: prevEpisodeData.episode_number
           };
+          console.log("Found previous episode:", prevEpisode);
         }
       }
+    }
 
-      // If no next episode in current season, check next season
-      if (!nextEpisode && detail.seasons && detail.seasons.length > currentSeason.season_number) {
-        const nextSeason = detail.seasons.find((s: any) => s.season_number === seasonNumber + 1);
-        if (nextSeason && nextSeason.episodes && Array.isArray(nextSeason.episodes) && nextSeason.episodes.length > 0) {
+    // If no next episode in current season, check if there's a next season
+    if (!nextEpisode && detail.seasons) {
+      // Sort seasons by season_number to ensure we get the correct next season
+      const sortedSeasons = [...detail.seasons].sort((a, b) => a.season_number - b.season_number);
+      const currentSeasonIndex = sortedSeasons.findIndex(s => s.season_number === seasonNumber);
+
+      if (currentSeasonIndex !== -1 && currentSeasonIndex < sortedSeasons.length - 1) {
+        const nextSeason = sortedSeasons[currentSeasonIndex + 1];
+        if (nextSeason && nextSeason.season_number > 0) {
+          // For next season, we'll just set episode 1 (we don't have the episode data yet)
           nextEpisode = {
-            id: nextSeason.episodes[0].id,
-            seasonNumber: seasonNumber + 1,
+            id: parseInt(id || "0"), // We don't have the episode ID, so use the show ID
+            seasonNumber: nextSeason.season_number,
             episodeNumber: 1
           };
+          console.log("Found next season:", nextEpisode);
+        }
+      }
+    }
+
+    // If no previous episode in current season, check if there's a previous season
+    if (!prevEpisode && seasonNumber > 1 && detail.seasons) {
+      // Sort seasons by season_number to ensure we get the correct previous season
+      const sortedSeasons = [...detail.seasons].sort((a, b) => a.season_number - b.season_number);
+      const currentSeasonIndex = sortedSeasons.findIndex(s => s.season_number === seasonNumber);
+
+      if (currentSeasonIndex > 0) {
+        const prevSeason = sortedSeasons[currentSeasonIndex - 1];
+        if (prevSeason && prevSeason.season_number > 0) {
+          // For previous season, we'll use the last episode (assuming it's the season finale)
+          // We don't know the exact episode count, so we'll use a reasonable guess (10)
+          prevEpisode = {
+            id: parseInt(id || "0"), // We don't have the episode ID, so use the show ID
+            seasonNumber: prevSeason.season_number,
+            episodeNumber: prevSeason.episode_count || 10 // Use episode_count if available, otherwise guess 10
+          };
+          console.log("Found previous season:", prevEpisode);
         }
       }
     }
@@ -136,6 +187,7 @@ export function WatchPage() {
           episodeNumber={episodeNumber}
           seasonNumber={seasonNumber}
           nextEpisode={nextEpisode}
+          prevEpisode={prevEpisode}
           onProgressUpdate={handleProgressUpdate}
         />
 
