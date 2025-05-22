@@ -157,6 +157,15 @@ export const getTVEpisodeDetails = async (tvId: string, seasonNumber: number, ep
 };
 
 /**
+ * Get person (actor/director) details
+ */
+export const getPersonDetails = async (personId: string) => {
+  return fetchWithCache(`/person/${personId}`, {
+    append_to_response: 'combined_credits'
+  });
+};
+
+/**
  * Search movies, TV shows, and people
  */
 export const searchMulti = async (query: string, page: number = 1) => {
@@ -324,6 +333,7 @@ export default {
   getTVShowDetails,
   getTVSeasonDetails,
   getTVEpisodeDetails,
+  getPersonDetails,
   searchMulti,
   getMovieGenres,
   getTVGenres,

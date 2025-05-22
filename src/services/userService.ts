@@ -19,7 +19,8 @@ import { User, WatchHistoryItem, UserSettings } from '../types/user';
  */
 export const getUserById = async (userId: string): Promise<User | null> => {
   try {
-    const userDoc = await getDoc(doc(firestore, 'users', userId));
+    const userRef = doc(firestore, 'users', userId);
+    const userDoc = await getDoc(userRef);
 
     if (userDoc.exists()) {
       return userDoc.data() as User;

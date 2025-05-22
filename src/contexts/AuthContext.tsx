@@ -8,6 +8,7 @@ interface AuthContextType {
   currentUser: FirebaseUser | null;
   userData: User | null;
   isLoading: boolean;
+  isAuthenticated: boolean;
   setUserData: React.Dispatch<React.SetStateAction<User | null>>;
   refreshUserData: () => Promise<void>;
 }
@@ -23,7 +24,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const unsubscribe = onAuthStateChange(async (user) => {
       setCurrentUser(user);
       setIsLoading(true);
-      
+
       if (user) {
         try {
           const userDoc = await getUserById(user.uid);
@@ -34,7 +35,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       } else {
         setUserData(null);
       }
-      
+
       setIsLoading(false);
     });
 
@@ -45,7 +46,41 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     if (currentUser) {
       try {
         const userDoc = await getUserById(currentUser.uid);
-        setUserData(userDoc);
+
+        if (userDoc) {
+          setUserData(userDoc);
+        } else {
+          // Create a new user document if it doesn't exist
+          const newUserData = {
+            id: currentUser.uid,
+            email: currentUser.email || '',
+            username: currentUser.displayName || 'User',
+            avatar: currentUser.photoURL || `https://ui-avatars.com/api/?name=${currentUser.displayName || 'User'}&background=random`,
+            favorites: [],
+            watchLater: [],
+            watchHistory: [],
+            settings: {
+              defaultSource: 'vidsrc.dev',
+              preferredQuality: '1080p',
+              preferredSubtitle: 'English',
+              autoplayEnabled: true,
+              mutedAutoplay: true
+            }
+          };
+
+          // Import needed functions
+          const { doc, setDoc, serverTimestamp } = await import('firebase/firestore');
+          const { firestore } = await import('../lib/firebase');
+
+          // Create the user document
+          await setDoc(doc(firestore, 'users', currentUser.uid), {
+            ...newUserData,
+            createdAt: serverTimestamp(),
+            updatedAt: serverTimestamp()
+          });
+
+          setUserData(newUserData as User);
+        }
       } catch (error) {
         console.error('Error refreshing user data:', error);
       }
@@ -56,6 +91,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     currentUser,
     userData,
     isLoading,
+    isAuthenticated: !!currentUser,
     setUserData,
     refreshUserData
   };

@@ -3,9 +3,11 @@ import { useAuth } from '../contexts/AuthContext';
 import recommendationService from '../services/recommendationService';
 import { toast } from 'sonner';
 import { MediaItem } from '../types/media';
+import { useQueryClient } from '@tanstack/react-query';
 
 export const useRecommendations = () => {
   const { userData, isAuthenticated } = useAuth();
+  const queryClient = useQueryClient();
   const [recommendations, setRecommendations] = useState<MediaItem[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
@@ -21,18 +23,19 @@ export const useRecommendations = () => {
 
     try {
       const results = await recommendationService.getRecommendations(userData.id);
-      
+
       // Convert to MediaItem format
       const mediaItems: MediaItem[] = results.map(rec => ({
         id: rec.id,
         title: rec.title,
         poster_path: rec.poster_path,
         media_type: rec.media_type,
-        vote_average: 0, // We don't have this from recommendations
+        vote_average: rec.vote_average || 0, // Use vote_average from recommendation if available
         overview: rec.reason, // Use reason as overview
         release_date: '', // We don't have this from recommendations
+        first_air_date: '', // We don't have this from recommendations
       }));
-      
+
       setRecommendations(mediaItems);
     } catch (error) {
       console.error('Error fetching recommendations:', error);
@@ -59,21 +62,26 @@ export const useRecommendations = () => {
     setError(null);
 
     try {
-      // Force generate new recommendations
-      const results = await recommendationService.generateRecommendations(userData.id);
-      
+      // Use the dedicated refresh function
+      const results = await recommendationService.refreshRecommendations(userData.id);
+
       // Convert to MediaItem format
       const mediaItems: MediaItem[] = results.map(rec => ({
         id: rec.id,
         title: rec.title,
         poster_path: rec.poster_path,
         media_type: rec.media_type,
-        vote_average: 0,
+        vote_average: rec.vote_average || 0,
         overview: rec.reason,
         release_date: '',
+        first_air_date: '',
       }));
-      
+
       setRecommendations(mediaItems);
+
+      // Invalidate any related queries that might depend on recommendations
+      queryClient.invalidateQueries({ queryKey: ['recommendations'] });
+
       toast.success('Recommendations refreshed');
     } catch (error) {
       console.error('Error refreshing recommendations:', error);
@@ -82,7 +90,7 @@ export const useRecommendations = () => {
     } finally {
       setIsLoading(false);
     }
-  }, [isAuthenticated, userData]);
+  }, [isAuthenticated, userData, queryClient]);
 
   return {
     recommendations,
