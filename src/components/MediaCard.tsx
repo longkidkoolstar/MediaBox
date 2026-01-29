@@ -1,16 +1,23 @@
 
 import { Link } from "react-router-dom";
-import { Heart, Star, Clock, Check } from "lucide-react";
+import { Heart, Star, Clock, Check, Eye, CheckCircle, PauseCircle, XCircle, Plus, Trash2 } from "lucide-react";
 import { Button } from "./ui/button";
 import { useFavorites } from "../hooks/useFavorites";
-import { useWatchLater } from "../hooks/useWatchLater";
+import { useWatchList } from "../hooks/useWatchList";
 import { useAuth } from "../contexts/AuthContext";
+import { WatchStatus } from "../types/user";
 import {
   Tooltip,
   TooltipContent,
   TooltipProvider,
   TooltipTrigger,
 } from "./ui/tooltip";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "./ui/dropdown-menu";
 
 export interface MediaItem {
   id: number;
@@ -30,7 +37,9 @@ interface MediaCardProps {
 export function MediaCard({ item, priority = false }: MediaCardProps) {
   const { currentUser } = useAuth();
   const { isFavorite, toggleFavorite, isProcessing: isFavoriteProcessing } = useFavorites();
-  const { isInWatchLater, toggleWatchLater, isProcessing: isWatchLaterProcessing } = useWatchLater();
+  const { getWatchStatus, updateStatus, removeItem, isProcessing: isWatchListProcessing } = useWatchList();
+
+  const status = getWatchStatus(item.id, item.media_type);
 
   const year = item.release_date
     ? new Date(item.release_date).getFullYear()
@@ -47,11 +56,14 @@ export function MediaCard({ item, priority = false }: MediaCardProps) {
     toggleFavorite(item.id, item.title, item.media_type);
   };
 
-  const handleToggleWatchLater = (e: React.MouseEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
+  const handleStatusChange = (newStatus: WatchStatus) => {
     if (!currentUser) return;
-    toggleWatchLater(item.id, item.title, item.media_type);
+    updateStatus(item.id, item.title, item.media_type, newStatus);
+  };
+
+  const handleRemove = () => {
+    if (!currentUser) return;
+    removeItem(item.id, item.title, item.media_type);
   };
 
   return (
@@ -99,28 +111,52 @@ export function MediaCard({ item, priority = false }: MediaCardProps) {
           </Tooltip>
         </TooltipProvider>
 
-        <TooltipProvider>
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Button
-                variant="ghost"
-                size="icon"
-                className="bg-black/40 backdrop-blur-sm rounded-full hover:bg-black/60"
-                onClick={handleToggleWatchLater}
-                disabled={isWatchLaterProcessing}
-              >
-                {isInWatchLater(item.id, item.media_type) ? (
-                  <Check className="h-4 w-4 text-green-500" />
-                ) : (
-                  <Clock className="h-4 w-4 text-white" />
-                )}
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent>
-              <p>{isInWatchLater(item.id, item.media_type) ? 'Remove from Watch Later' : 'Add to Watch Later'}</p>
-            </TooltipContent>
-          </Tooltip>
-        </TooltipProvider>
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="bg-black/40 backdrop-blur-sm rounded-full hover:bg-black/60"
+              disabled={isWatchListProcessing}
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+              }}
+            >
+              {status === 'watching' && <Eye className="h-4 w-4 text-blue-500" />}
+              {status === 'completed' && <CheckCircle className="h-4 w-4 text-green-500" />}
+              {status === 'on-hold' && <PauseCircle className="h-4 w-4 text-yellow-500" />}
+              {status === 'dropped' && <XCircle className="h-4 w-4 text-red-500" />}
+              {status === 'plan_to_watch' && <Clock className="h-4 w-4 text-purple-500" />}
+              {!status && <Plus className="h-4 w-4 text-white" />}
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end">
+            <DropdownMenuItem onClick={(e) => { e.stopPropagation(); handleStatusChange('watching'); }}>
+              <Eye className="mr-2 h-4 w-4" /> Watching
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={(e) => { e.stopPropagation(); handleStatusChange('plan_to_watch'); }}>
+              <Clock className="mr-2 h-4 w-4" /> Plan to Watch
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={(e) => { e.stopPropagation(); handleStatusChange('completed'); }}>
+              <CheckCircle className="mr-2 h-4 w-4" /> Completed
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={(e) => { e.stopPropagation(); handleStatusChange('on-hold'); }}>
+              <PauseCircle className="mr-2 h-4 w-4" /> On Hold
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={(e) => { e.stopPropagation(); handleStatusChange('dropped'); }}>
+              <XCircle className="mr-2 h-4 w-4" /> Dropped
+            </DropdownMenuItem>
+            {status && (
+              <>
+                <div className="h-px bg-border my-1" />
+                <DropdownMenuItem onClick={(e) => { e.stopPropagation(); handleRemove(); }} className="text-red-500 focus:text-red-500">
+                  <Trash2 className="mr-2 h-4 w-4" /> Remove
+                </DropdownMenuItem>
+              </>
+            )}
+          </DropdownMenuContent>
+        </DropdownMenu>
       </div>
     </div>
   );

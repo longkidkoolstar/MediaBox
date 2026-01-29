@@ -12,7 +12,7 @@ import {
   getDocs
 } from 'firebase/firestore';
 import { firestore } from '../lib/firebase';
-import { User, WatchHistoryItem, UserSettings } from '../types/user';
+import { User, WatchHistoryItem, UserSettings, WatchStatus, WatchListItem } from '../types/user';
 
 /**
  * Get user data by ID
@@ -327,3 +327,87 @@ export const getUserLists = async (userId: string) => {
     throw error;
   }
 };
+
+/**
+ * Update watch status for a media item
+ */
+export const updateWatchStatus = async (
+  userId: string,
+  mediaId: number,
+  mediaType: 'movie' | 'tv' | 'anime',
+  status: WatchStatus
+): Promise<void> => {
+  try {
+    const userRef = doc(firestore, 'users', userId);
+    const userDoc = await getDoc(userRef);
+
+    if (userDoc.exists()) {
+      const userData = userDoc.data() as User;
+      let watchlist = userData.watchlist || [];
+
+      // Check if item already exists
+      const existingItemIndex = watchlist.findIndex(
+        item => item.id === mediaId && item.media_type === mediaType
+      );
+
+      if (existingItemIndex !== -1) {
+        // Update existing item
+        watchlist[existingItemIndex] = {
+          ...watchlist[existingItemIndex],
+          status,
+          updatedAt: new Date().toISOString()
+        };
+      } else {
+        // Add new item
+        watchlist.push({
+          id: mediaId,
+          media_type: mediaType,
+          status,
+          updatedAt: new Date().toISOString()
+        });
+      }
+
+      await updateDoc(userRef, {
+        watchlist,
+        updatedAt: serverTimestamp()
+      });
+    }
+  } catch (error) {
+    console.error('Error updating watch status:', error);
+    throw error;
+  }
+};
+
+/**
+ * Remove media from watchlist
+ */
+export const removeFromWatchlist = async (
+  userId: string,
+  mediaId: number,
+  mediaType: 'movie' | 'tv' | 'anime'
+): Promise<void> => {
+  try {
+    const userRef = doc(firestore, 'users', userId);
+    const userDoc = await getDoc(userRef);
+
+    if (userDoc.exists()) {
+      const userData = userDoc.data() as User;
+      const watchlist = userData.watchlist || [];
+      
+      const newWatchlist = watchlist.filter(
+        item => !(item.id === mediaId && item.media_type === mediaType)
+      );
+
+      if (newWatchlist.length !== watchlist.length) {
+        await updateDoc(userRef, {
+          watchlist: newWatchlist,
+          updatedAt: serverTimestamp()
+        });
+      }
+    }
+  } catch (error) {
+    console.error('Error removing from watchlist:', error);
+    throw error;
+  }
+};
+

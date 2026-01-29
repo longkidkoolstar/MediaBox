@@ -64,6 +64,7 @@ export interface TVShowDetails extends MediaItem {
   tagline?: string;
   genres?: string[];
   seasons?: TVSeason[];
+  episode_run_time?: number[];
   videos?: {
     name: string;
     key: string;

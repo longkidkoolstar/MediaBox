@@ -5,17 +5,24 @@ import { Layout } from "../components/Layout";
 import { Button } from "../components/ui/button";
 import { MediaCarousel } from "../components/MediaCarousel";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "../components/ui/tabs";
-import { Star, Calendar, Clock, Play, Heart, Loader2, Check } from "lucide-react";
+import { Star, Calendar, Clock, Play, Heart, Loader2, Check, Eye, CheckCircle, PauseCircle, XCircle, Plus, Trash2 } from "lucide-react";
 import { useAuth } from "../contexts/AuthContext";
 import { useFavorites } from "../hooks/useFavorites";
-import { useWatchLater } from "../hooks/useWatchLater";
+import { useWatchList } from "../hooks/useWatchList";
 import { useMovieDetails, useTVShowDetails, useFirstSeasonDetails } from "../hooks/useTMDB";
+import { WatchStatus } from "../types/user";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "../components/ui/dropdown-menu";
 
 export function MediaDetailPage() {
   const { mediaType, id } = useParams<{ mediaType: string; id: string }>();
   const { userData } = useAuth();
   const { isFavorite, toggleFavorite, isProcessing: isFavoriteProcessing } = useFavorites();
-  const { isInWatchLater, toggleWatchLater, isProcessing: isWatchLaterProcessing } = useWatchLater();
+  const { getWatchStatus, updateStatus, removeItem, isProcessing: isWatchListProcessing } = useWatchList();
 
   // Fetch media details based on media type
   const { data: movieData, isLoading: movieLoading, error: movieError } =
@@ -34,6 +41,7 @@ export function MediaDetailPage() {
   const isLoading = movieLoading || tvLoading || (mediaType !== "movie" && seasonLoading);
   const error = movieError || tvError;
   const detail = mediaType === "movie" ? movieData : tvData;
+  const status = detail ? getWatchStatus(detail.id, mediaType as any) : null;
 
   const handleToggleFavorite = () => {
     if (!detail || !mediaType) return;
@@ -41,10 +49,14 @@ export function MediaDetailPage() {
     toggleFavorite(detail.id, detail.title, mediaType as 'movie' | 'tv' | 'anime');
   };
 
-  const handleToggleWatchLater = () => {
-    if (!detail || !mediaType) return;
+  const handleStatusChange = (newStatus: WatchStatus) => {
+    if (!userData || !detail || !mediaType) return;
+    updateStatus(detail.id, detail.title, mediaType as any, newStatus);
+  };
 
-    toggleWatchLater(detail.id, detail.title, mediaType as 'movie' | 'tv' | 'anime');
+  const handleRemove = () => {
+    if (!userData || !detail || !mediaType) return;
+    removeItem(detail.id, detail.title, mediaType as any);
   };
 
   if (isLoading) {
@@ -158,10 +170,16 @@ export function MediaDetailPage() {
                   <span>{releaseDate}</span>
                 </div>
               )}
-              {detail.runtime && (
+              {detail.media_type === 'movie' && detail.runtime && (
                 <div className="flex items-center">
                   <Clock className="h-4 w-4 mr-1" />
                   <span>{formatRuntime(detail.runtime)}</span>
+                </div>
+              )}
+              {(detail.media_type === 'tv' || detail.media_type === 'anime') && detail.episode_run_time && detail.episode_run_time.length > 0 && (
+                <div className="flex items-center">
+                  <Clock className="h-4 w-4 mr-1" />
+                  <span>{formatRuntime(detail.episode_run_time[0])}</span>
                 </div>
               )}
               <div className="flex items-center">
@@ -202,33 +220,56 @@ export function MediaDetailPage() {
                   </>
                 )}
               </Button>
-              <Button
-                variant="outline"
-                className="text-white border-white/20 bg-white/10 backdrop-blur-md hover:bg-white/20 flex items-center gap-2"
-                onClick={handleToggleWatchLater}
-                disabled={isWatchLaterProcessing || !userData}
-              >
-                {isWatchLaterProcessing ? (
-                  <>
-                    <Loader2 className="h-4 w-4 animate-spin mr-1" />
-                    Processing...
-                  </>
-                ) : (
-                  <>
-                    {isInWatchLater(detail.id, mediaType as 'movie' | 'tv' | 'anime') ? (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button
+                    variant="outline"
+                    className="text-white border-white/20 bg-white/10 backdrop-blur-md hover:bg-white/20 flex items-center gap-2"
+                    disabled={isWatchListProcessing || !userData}
+                  >
+                    {isWatchListProcessing ? (
                       <>
-                        <Check className="h-4 w-4 text-green-500" />
-                        Remove from Watch Later
+                        <Loader2 className="h-4 w-4 animate-spin mr-1" />
+                        Processing...
                       </>
                     ) : (
                       <>
-                        <Clock className="h-4 w-4" />
-                        Add to Watch Later
+                        {status === 'watching' && <><Eye className="h-4 w-4 text-blue-500" /> Watching</>}
+                        {status === 'completed' && <><CheckCircle className="h-4 w-4 text-green-500" /> Completed</>}
+                        {status === 'on-hold' && <><PauseCircle className="h-4 w-4 text-yellow-500" /> On Hold</>}
+                        {status === 'dropped' && <><XCircle className="h-4 w-4 text-red-500" /> Dropped</>}
+                        {status === 'plan_to_watch' && <><Clock className="h-4 w-4 text-purple-500" /> Plan to Watch</>}
+                        {!status && <><Clock className="h-4 w-4" /> Add to Watchlist</>}
                       </>
                     )}
-                  </>
-                )}
-              </Button>
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuItem onClick={() => handleStatusChange('watching')}>
+                    <Eye className="mr-2 h-4 w-4" /> Watching
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => handleStatusChange('plan_to_watch')}>
+                    <Clock className="mr-2 h-4 w-4" /> Plan to Watch
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => handleStatusChange('completed')}>
+                    <CheckCircle className="mr-2 h-4 w-4" /> Completed
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => handleStatusChange('on-hold')}>
+                    <PauseCircle className="mr-2 h-4 w-4" /> On Hold
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => handleStatusChange('dropped')}>
+                    <XCircle className="mr-2 h-4 w-4" /> Dropped
+                  </DropdownMenuItem>
+                  {status && (
+                    <>
+                      <div className="h-px bg-border my-1" />
+                      <DropdownMenuItem onClick={handleRemove} className="text-red-500 focus:text-red-500">
+                        <Trash2 className="mr-2 h-4 w-4" /> Remove
+                      </DropdownMenuItem>
+                    </>
+                  )}
+                </DropdownMenuContent>
+              </DropdownMenu>
             </div>
           </div>
         </div>
@@ -305,7 +346,7 @@ export function MediaDetailPage() {
               <p className="text-muted-foreground">{detail.overview}</p>
             </div>
 
-            {(mediaType === "tv" || mediaType === "anime") && detail.seasons && (
+            {(mediaType === "tv" || mediaType === "anime") && 'seasons' in detail && detail.seasons && (
               <div className="mb-8">
                 <Tabs defaultValue="episodes">
                   <TabsList>

@@ -20,7 +20,7 @@ const SearchPage = lazy(() => import("./pages/SearchPage"));
 const ProfilePage = lazy(() => import("./pages/ProfilePage"));
 const SettingsPage = lazy(() => import("./pages/SettingsPage"));
 const FavoritesPage = lazy(() => import("./pages/FavoritesPage"));
-const WatchLaterPage = lazy(() => import("./pages/WatchLaterPage"));
+const WatchListPage = lazy(() => import("./pages/WatchListPage"));
 const WatchHistoryPage = lazy(() => import("./pages/WatchHistoryPage"));
 const LoginPage = lazy(() => import("./pages/LoginPage"));
 const RegisterPage = lazy(() => import("./pages/RegisterPage"));
@@ -127,10 +127,18 @@ const App = () => {
                   }
                 />
                 <Route
+                  path="/watchlist"
+                  element={
+                    <ProtectedRoute>
+                      <WatchListPage />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
                   path="/watch-later"
                   element={
                     <ProtectedRoute>
-                      <WatchLaterPage />
+                      <Navigate to="/watchlist" replace />
                     </ProtectedRoute>
                   }
                 />

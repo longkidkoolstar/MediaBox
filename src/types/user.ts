@@ -24,6 +24,15 @@ export interface FavoriteItem {
   media_type: 'movie' | 'tv' | 'anime';
 }
 
+export type WatchStatus = 'watching' | 'on-hold' | 'plan_to_watch' | 'dropped' | 'completed';
+
+export interface WatchListItem {
+  id: number;
+  media_type: 'movie' | 'tv' | 'anime';
+  status: WatchStatus;
+  updatedAt: string;
+}
+
 export interface WatchLaterItem {
   id: number;
   media_type: 'movie' | 'tv' | 'anime';
@@ -35,7 +44,8 @@ export interface User {
   email: string;
   avatar: string;
   favorites: FavoriteItem[];
-  watchLater: WatchLaterItem[];
+  watchLater: WatchLaterItem[]; // Deprecated, use watchlist with status 'plan_to_watch'
+  watchlist?: WatchListItem[];
   watchHistory: WatchHistoryItem[];
   settings?: UserSettings;
   createdAt?: Timestamp;
