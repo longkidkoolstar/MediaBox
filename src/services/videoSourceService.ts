@@ -6,7 +6,11 @@ export enum VideoProvider {
   EMBED_2 = '2embed',
   EMBED_2CC = '2embed.cc',
   VIDSRC_XYZ = 'vidsrc.xyz',
-  VIDSRC_TO = 'vidsrc.to'
+  VIDSRC_TO = 'vidsrc.to',
+  VIDSRC_EMBED_RU = 'vidsrc-embed.ru',
+  VIDSRC_EMBED_SU = 'vidsrc-embed.su',
+  VIDSRCME_SU = 'vidsrcme.su',
+  VSRC_SU = 'vsrc.su'
 }
 
 /**
@@ -39,6 +43,69 @@ const buildVidsrcXyzUrl = (
       return `${baseUrl}/tv?tmdb=${id}`;
     }
   }
+};
+
+/**
+ * Optional parameters for VidSrc embed providers
+ */
+export interface VidSrcEmbedOptions {
+  sub_url?: string;  // URL encoded .srt or .vtt subtitle URL
+  ds_lang?: string;  // Default subtitle language (ISO639 code)
+  autoplay?: boolean; // Enable or disable autoplay
+}
+
+/**
+ * Build URL for new VidSrc embed providers (vidsrc-embed.ru, vidsrc-embed.su, vidsrcme.su, vsrc.su)
+ */
+const buildVidSrcEmbedUrl = (
+  provider: VideoProvider,
+  mediaType: 'movie' | 'tv',
+  id: string,
+  season?: number,
+  episode?: number,
+  options?: VidSrcEmbedOptions
+): string => {
+  // Determine the base URL based on provider
+  let baseUrl: string;
+  switch (provider) {
+    case VideoProvider.VIDSRC_EMBED_RU:
+      baseUrl = 'https://vidsrc-embed.ru/embed';
+      break;
+    case VideoProvider.VIDSRC_EMBED_SU:
+      baseUrl = 'https://vidsrc-embed.su/embed';
+      break;
+    case VideoProvider.VIDSRCME_SU:
+      baseUrl = 'https://vidsrcme.su/embed';
+      break;
+    case VideoProvider.VSRC_SU:
+      baseUrl = 'https://vsrc.su/embed';
+      break;
+    default:
+      baseUrl = 'https://vidsrc-embed.ru/embed';
+  }
+
+  // Build query parameters
+  const params = new URLSearchParams();
+  params.append('tmdb', id);
+
+  // Add season and episode for TV shows
+  if (mediaType === 'tv') {
+    if (season) params.append('s', season.toString());
+    if (episode) params.append('e', episode.toString());
+  }
+
+  // Add optional parameters
+  if (options?.sub_url) {
+    params.append('sub_url', encodeURIComponent(options.sub_url));
+  }
+  if (options?.ds_lang) {
+    params.append('ds_lang', options.ds_lang);
+  }
+  if (options?.autoplay !== undefined) {
+    params.append('autoplay', options.autoplay ? '1' : '0');
+  }
+
+  return `${baseUrl}/${mediaType}?${params.toString()}`;
 };
 
 /**
@@ -75,6 +142,12 @@ export const getMovieEmbedUrl = async (
 
       case VideoProvider.VIDSRC_TO:
         return `https://vidsrc.to/embed/movie/${id}`;
+
+      case VideoProvider.VIDSRC_EMBED_RU:
+      case VideoProvider.VIDSRC_EMBED_SU:
+      case VideoProvider.VIDSRCME_SU:
+      case VideoProvider.VSRC_SU:
+        return buildVidSrcEmbedUrl(provider, 'movie', movieId);
 
       default:
         return `https://vidsrc.dev/embed/movie/${movieId}`;
@@ -139,6 +212,12 @@ export const getTVEmbedUrl = async (
         }
         return `https://vidsrc.to/embed/tv/${id}.html`;
 
+      case VideoProvider.VIDSRC_EMBED_RU:
+      case VideoProvider.VIDSRC_EMBED_SU:
+      case VideoProvider.VIDSRCME_SU:
+      case VideoProvider.VSRC_SU:
+        return buildVidSrcEmbedUrl(provider, 'tv', showId, season, episode);
+
       default:
         if (season && episode) {
           return `https://vidsrc.dev/embed/tv/${showId}/${season}/${episode}`;
@@ -164,7 +243,11 @@ export const getAvailableProviders = (): { id: VideoProvider; name: string }[] =
     { id: VideoProvider.EMBED_2, name: '2Embed' },
     { id: VideoProvider.EMBED_2CC, name: '2Embed.cc' },
     { id: VideoProvider.VIDSRC_XYZ, name: 'VidSrc.xyz' },
-    { id: VideoProvider.VIDSRC_TO, name: 'VidSrc.to' }
+    { id: VideoProvider.VIDSRC_TO, name: 'VidSrc.to' },
+    { id: VideoProvider.VIDSRC_EMBED_RU, name: 'VidSrc Embed RU' },
+    { id: VideoProvider.VIDSRC_EMBED_SU, name: 'VidSrc Embed SU' },
+    { id: VideoProvider.VIDSRCME_SU, name: 'VidSrcMe SU' },
+    { id: VideoProvider.VSRC_SU, name: 'VSrc SU' }
   ];
 };
 
