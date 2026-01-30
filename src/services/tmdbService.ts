@@ -1,6 +1,3 @@
-import { doc, getDoc, setDoc } from 'firebase/firestore';
-import { firestore } from '../lib/firebase';
-
 // TMDB API configuration
 const TMDB_API_KEY = import.meta.env.VITE_TMDB_API_KEY || '1d21d96347d1b72f32806b6256c3a132';
 const TMDB_BASE_URL = 'https://api.themoviedb.org/3';
@@ -9,8 +6,83 @@ const TMDB_IMAGE_BASE_URL = 'https://image.tmdb.org/t/p';
 // Cache expiration time (24 hours in milliseconds)
 const CACHE_EXPIRATION = 24 * 60 * 60 * 1000;
 
+// In-memory cache as a fallback for when localStorage is full
+const memoryCache = new Map<string, { result: any; timestamp: number; notFound?: boolean }>();
+
 /**
- * Fetch data from TMDB API with caching in Firestore
+ * Get cached data from localStorage or memory cache
+ */
+const getCachedData = (cacheKey: string) => {
+  try {
+    // Try localStorage first
+    const cached = localStorage.getItem(`tmdb_${cacheKey}`);
+    if (cached) {
+      return JSON.parse(cached);
+    }
+  } catch (error) {
+    console.warn('Error reading from localStorage:', error);
+  }
+  
+  // Fallback to memory cache
+  return memoryCache.get(cacheKey);
+};
+
+/**
+ * Set cached data in localStorage and memory cache
+ */
+const setCachedData = (cacheKey: string, data: any) => {
+  try {
+    // Store in localStorage
+    localStorage.setItem(`tmdb_${cacheKey}`, JSON.stringify(data));
+  } catch (error) {
+    // If localStorage is full, clear old entries
+    if (error instanceof DOMException && (error.name === 'QuotaExceededError' || error.name === 'NS_ERROR_DOM_QUOTA_REACHED')) {
+      console.warn('localStorage quota exceeded, clearing old TMDB cache entries');
+      clearOldCacheEntries();
+      try {
+        localStorage.setItem(`tmdb_${cacheKey}`, JSON.stringify(data));
+      } catch (retryError) {
+        console.warn('Still unable to cache in localStorage, using memory cache only');
+      }
+    }
+  }
+  
+  // Always store in memory cache as backup
+  memoryCache.set(cacheKey, data);
+};
+
+/**
+ * Clear old cache entries from localStorage
+ */
+const clearOldCacheEntries = () => {
+  try {
+    const now = Date.now();
+    const keysToRemove: string[] = [];
+    
+    for (let i = 0; i < localStorage.length; i++) {
+      const key = localStorage.key(i);
+      if (key && key.startsWith('tmdb_')) {
+        try {
+          const data = JSON.parse(localStorage.getItem(key) || '{}');
+          if (data.timestamp && now - data.timestamp > CACHE_EXPIRATION) {
+            keysToRemove.push(key);
+          }
+        } catch (e) {
+          // Invalid data, remove it
+          keysToRemove.push(key);
+        }
+      }
+    }
+    
+    keysToRemove.forEach(key => localStorage.removeItem(key));
+    console.log(`Cleared ${keysToRemove.length} old cache entries`);
+  } catch (error) {
+    console.warn('Error clearing old cache entries:', error);
+  }
+};
+
+/**
+ * Fetch data from TMDB API with localStorage caching
  */
 const fetchWithCache = async (endpoint: string, params: Record<string, string> = {}) => {
   try {
@@ -21,21 +93,19 @@ const fetchWithCache = async (endpoint: string, params: Record<string, string> =
     }).toString();
 
     const cacheKey = `${endpoint}?${queryParams}`.replace(/\//g, '_');
-    const cacheRef = doc(firestore, 'tmdb_cache', cacheKey);
-    const cachedData = await getDoc(cacheRef);
+    const cachedData = getCachedData(cacheKey);
 
     // Check if we have valid cached data
-    if (cachedData.exists()) {
-      const data = cachedData.data();
+    if (cachedData) {
       const now = Date.now();
 
       // Return cached data if it's still valid
-      if (data.timestamp && now - data.timestamp < CACHE_EXPIRATION) {
+      if (cachedData.timestamp && now - cachedData.timestamp < CACHE_EXPIRATION) {
         // If we previously cached a 404 error, return null
-        if (data.notFound) {
+        if (cachedData.notFound) {
           return null;
         }
-        return data.result;
+        return cachedData.result;
       }
     }
 
@@ -46,7 +116,7 @@ const fetchWithCache = async (endpoint: string, params: Record<string, string> =
     // Handle 404 errors specially
     if (response.status === 404) {
       // Cache the 404 result to avoid repeated requests for non-existent resources
-      await setDoc(cacheRef, {
+      setCachedData(cacheKey, {
         notFound: true,
         timestamp: Date.now()
       });
@@ -59,8 +129,8 @@ const fetchWithCache = async (endpoint: string, params: Record<string, string> =
 
     const result = await response.json();
 
-    // Cache the result in Firestore
-    await setDoc(cacheRef, {
+    // Cache the result in localStorage
+    setCachedData(cacheKey, {
       result,
       timestamp: Date.now()
     });
@@ -325,6 +395,30 @@ export const getMultipleMediaDetailsByIds = async (mediaIds: number[]) => {
   }
 };
 
+/**
+ * Clear all TMDB cache (useful for debugging or forcing fresh data)
+ */
+export const clearCache = () => {
+  try {
+    // Clear localStorage cache
+    const keysToRemove: string[] = [];
+    for (let i = 0; i < localStorage.length; i++) {
+      const key = localStorage.key(i);
+      if (key && key.startsWith('tmdb_')) {
+        keysToRemove.push(key);
+      }
+    }
+    keysToRemove.forEach(key => localStorage.removeItem(key));
+    
+    // Clear memory cache
+    memoryCache.clear();
+    
+    console.log(`Cleared ${keysToRemove.length} cache entries`);
+  } catch (error) {
+    console.warn('Error clearing cache:', error);
+  }
+};
+
 export default {
   getTrendingMovies,
   getTrendingTVShows,
@@ -344,5 +438,6 @@ export default {
   getImageUrl,
   getMediaDetails,
   getMultipleMediaDetails,
-  getMultipleMediaDetailsByIds
+  getMultipleMediaDetailsByIds,
+  clearCache
 };
