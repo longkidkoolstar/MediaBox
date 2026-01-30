@@ -34,6 +34,7 @@ interface VideoPlayerProps {
     seasonNumber: number;
     episodeNumber: number;
   };
+  initialProgress?: number;
   onProgressUpdate?: (progress: number) => void;
 }
 
@@ -47,11 +48,13 @@ export function VideoPlayer({
   seasonNumber,
   nextEpisode,
   prevEpisode,
+  initialProgress = 0,
   onProgressUpdate
 }: VideoPlayerProps) {
   const navigate = useNavigate();
   const [activeSource, setActiveSource] = useState<VideoSource>(sources.length > 0 ? sources[0] : { name: '', url: '' });
   const iframeRef = useRef<HTMLIFrameElement>(null);
+  const progressRef = useRef(initialProgress);
 
   // Update active source when sources change
   useEffect(() => {
@@ -66,20 +69,26 @@ export function VideoPlayer({
     // Instead, we'll update progress periodically assuming the user is watching
     if (!onProgressUpdate) return;
 
-    // Initial progress update (start watching)
-    onProgressUpdate(10);
-
     // Update progress every minute
     const interval = setInterval(() => {
-      // Increment progress by 10% every minute, up to 90%
-      // We don't set it to 100% automatically to avoid marking unwatched content as completed
-      onProgressUpdate(Math.min(90, Math.floor(Date.now() / 60000) % 10 * 10));
+      // Increment progress by 5% every minute, up to 95%
+      // This is a rough approximation since we don't know the video duration
+      progressRef.current = Math.min(95, progressRef.current + 5);
+      onProgressUpdate(progressRef.current);
     }, 60000); // Update every minute
 
-    // Mark as 95% complete when component unmounts (user navigates away)
+    // Update immediately on mount if we have no progress
+    if (progressRef.current === 0) {
+       progressRef.current = 1;
+       onProgressUpdate(1);
+    }
+
+    // Save progress when component unmounts (user navigates away)
     return () => {
       clearInterval(interval);
-      onProgressUpdate(95);
+      if (onProgressUpdate) {
+        onProgressUpdate(progressRef.current);
+      }
     };
   }, [onProgressUpdate]);
 

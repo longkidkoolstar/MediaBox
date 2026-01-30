@@ -4,7 +4,7 @@ import { Button } from "../components/ui/button";
 import { History, Loader2, Play, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { useAuth } from "../contexts/AuthContext";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { useWatchHistory } from "../hooks/useWatchHistory";
 import { WatchHistoryItem } from "../types/user";
 import {
@@ -120,9 +120,9 @@ export function WatchHistoryPage() {
                 </div>
                 <div className="flex gap-2">
                   <Button size="sm" asChild>
-                    <a href={`/${item.media_type}/${item.id}/watch${item.season && item.episode ? `?season=${item.season}&episode=${item.episode}` : ''}`}>
+                    <Link to={`/${item.media_type}/${item.id}/watch${item.season && item.episode ? `?season=${item.season}&episode=${item.episode}` : ''}`}>
                       <Play className="h-4 w-4" />
-                    </a>
+                    </Link>
                   </Button>
                   <Button
                     size="sm"

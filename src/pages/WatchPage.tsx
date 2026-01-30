@@ -19,7 +19,14 @@ export function WatchPage() {
   const episodeNumber = parseInt(queryParams.get("episode") || "1");
 
   const { userData } = useAuth();
-  const { updateProgress } = useWatchHistory();
+  const { updateProgress, getWatchProgress } = useWatchHistory();
+
+  const initialProgress = getWatchProgress(
+    parseInt(id || "0"),
+    mediaType || "movie",
+    mediaType === "tv" || mediaType === "anime" ? seasonNumber : undefined,
+    mediaType === "tv" || mediaType === "anime" ? episodeNumber : undefined
+  );
 
   // Fetch media details based on media type
   const { data: movieData, isLoading: movieLoading, error: movieError } =
@@ -189,6 +196,7 @@ export function WatchPage() {
           seasonNumber={seasonNumber}
           nextEpisode={nextEpisode}
           prevEpisode={prevEpisode}
+          initialProgress={initialProgress}
           onProgressUpdate={handleProgressUpdate}
         />
 
