@@ -105,12 +105,23 @@ export const removeFromFavorites = async (
 ): Promise<void> => {
   try {
     const userRef = doc(firestore, 'users', userId);
-    const favoriteItem = { id: mediaId, media_type: mediaType };
+    const userDoc = await getDoc(userRef);
 
-    await updateDoc(userRef, {
-      favorites: arrayRemove(favoriteItem),
-      updatedAt: serverTimestamp()
-    });
+    if (userDoc.exists()) {
+      const userData = userDoc.data() as User;
+      const favorites = userData.favorites || [];
+
+      const newFavorites = favorites.filter(
+        item => !(item.id === mediaId && item.media_type === mediaType)
+      );
+
+      if (newFavorites.length !== favorites.length) {
+        await updateDoc(userRef, {
+          favorites: newFavorites,
+          updatedAt: serverTimestamp()
+        });
+      }
+    }
   } catch (error) {
     console.error('Error removing from favorites:', error);
     throw error;
@@ -250,12 +261,23 @@ export const removeFromWatchLater = async (
 ): Promise<void> => {
   try {
     const userRef = doc(firestore, 'users', userId);
-    const watchLaterItem = { id: mediaId, media_type: mediaType };
+    const userDoc = await getDoc(userRef);
 
-    await updateDoc(userRef, {
-      watchLater: arrayRemove(watchLaterItem),
-      updatedAt: serverTimestamp()
-    });
+    if (userDoc.exists()) {
+      const userData = userDoc.data() as User;
+      const watchLater = userData.watchLater || [];
+
+      const newWatchLater = watchLater.filter(
+        item => !(item.id === mediaId && item.media_type === mediaType)
+      );
+
+      if (newWatchLater.length !== watchLater.length) {
+        await updateDoc(userRef, {
+          watchLater: newWatchLater,
+          updatedAt: serverTimestamp()
+        });
+      }
+    }
   } catch (error) {
     console.error('Error removing from watch later:', error);
     throw error;

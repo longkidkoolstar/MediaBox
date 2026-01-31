@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { getMultipleMediaDetails } from '../services/tmdbService';
 import { MediaItem } from '../types/media';
@@ -11,6 +11,7 @@ export const useMediaLists = () => {
   const [isLoadingFavorites, setIsLoadingFavorites] = useState<boolean>(false);
   const [isLoadingWatchlist, setIsLoadingWatchlist] = useState<boolean>(false);
   const [error, setError] = useState<Error | null>(null);
+  const attemptedCleanupIds = useRef<Set<string>>(new Set());
 
   // Fetch favorite items
   useEffect(() => {
@@ -32,10 +33,16 @@ export const useMediaLists = () => {
           item => !foundIds.includes(item.id)
         );
 
-        if (missingItems.length > 0 && userData.id) {
-          console.log(`Cleaning up ${missingItems.length} invalid favorite items`);
+        // Filter out items we already tried to clean up
+        const itemsToCleanup = missingItems.filter(
+          item => !attemptedCleanupIds.current.has(`${item.media_type}:${item.id}`)
+        );
+
+        if (itemsToCleanup.length > 0 && userData.id) {
+          console.log(`Cleaning up ${itemsToCleanup.length} invalid favorite items`);
           // Clean up invalid items from user's favorites
-          for (const item of missingItems) {
+          for (const item of itemsToCleanup) {
+            attemptedCleanupIds.current.add(`${item.media_type}:${item.id}`);
             await removeFromFavorites(userData.id, item.id, item.media_type);
           }
           // Refresh user data
