@@ -75,7 +75,7 @@ export function Navbar() {
     { name: "TV Shows", path: "/tv", icon: <Film className="h-5 w-5" /> },
     { name: "Anime", path: "/anime", icon: <Film className="h-5 w-5" /> },
     { name: "Favorites", path: "/favorites", icon: <Heart className="h-5 w-5" /> },
-    { name: "Watch Later", path: "/watch-later", icon: <Clock className="h-5 w-5" /> },
+    { name: "Watch List", path: "/watchlist", icon: <Clock className="h-5 w-5" /> },
     { name: "Watch History", path: "/watch-history", icon: <History className="h-5 w-5" /> },
     { name: "Settings", path: "/settings", icon: <Settings className="h-5 w-5" /> },
   ];
@@ -154,9 +154,9 @@ export function Navbar() {
                     <Heart className="mr-2 h-4 w-4" />
                     <span>Favorites</span>
                   </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => navigate("/watch-later")}>
+                  <DropdownMenuItem onClick={() => navigate("/watchlist")}>
                     <Clock className="mr-2 h-4 w-4" />
-                    <span>Watch Later</span>
+                    <span>Watch List</span>
                   </DropdownMenuItem>
                   <DropdownMenuItem onClick={() => navigate("/watch-history")}>
                     <History className="mr-2 h-4 w-4" />
