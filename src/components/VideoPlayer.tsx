@@ -79,8 +79,8 @@ export function VideoPlayer({
 
     // Update immediately on mount if we have no progress
     if (progressRef.current === 0) {
-       progressRef.current = 1;
-       onProgressUpdate(1);
+      progressRef.current = 1;
+      onProgressUpdate(1);
     }
 
     // Save progress when component unmounts (user navigates away)

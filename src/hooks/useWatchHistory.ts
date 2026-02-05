@@ -20,7 +20,7 @@ export const useWatchHistory = () => {
             // For TV shows, match season and episode if provided
             mediaType !== 'movie'
               ? (season === undefined || item.season === season) &&
-                (episode === undefined || item.episode === episode)
+              (episode === undefined || item.episode === episode)
               : true
           )
       );
