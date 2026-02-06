@@ -415,7 +415,7 @@ export const removeFromWatchlist = async (
     if (userDoc.exists()) {
       const userData = userDoc.data() as User;
       const watchlist = userData.watchlist || [];
-      
+
       const newWatchlist = watchlist.filter(
         item => !(item.id === mediaId && item.media_type === mediaType)
       );

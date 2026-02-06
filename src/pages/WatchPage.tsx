@@ -187,6 +187,7 @@ export function WatchPage() {
     <Layout>
       <div className="max-w-7xl mx-auto">
         <VideoPlayer
+          key={`${mediaType}-${id}-${seasonNumber}-${episodeNumber}`}
           title={title}
           sources={sources}
           poster={`https://image.tmdb.org/t/p/w1280${detail.backdrop_path}`}
