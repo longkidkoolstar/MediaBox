@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import recommendationService from '../services/recommendationService';
 import { toast } from 'sonner';
@@ -11,10 +11,16 @@ export const useRecommendations = () => {
   const [recommendations, setRecommendations] = useState<MediaItem[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
+  const hasFetched = useRef<boolean>(false);
 
   const fetchRecommendations = useCallback(async () => {
-    if (!isAuthenticated || !userData) {
+    if (!isAuthenticated || !userData?.id) {
       setRecommendations([]);
+      return;
+    }
+
+    // Prevent duplicate fetches
+    if (hasFetched.current) {
       return;
     }
 
@@ -22,6 +28,7 @@ export const useRecommendations = () => {
     setError(null);
 
     try {
+      hasFetched.current = true;
       const results = await recommendationService.getRecommendations(userData.id);
 
       // Convert to MediaItem format
@@ -44,9 +51,9 @@ export const useRecommendations = () => {
     } finally {
       setIsLoading(false);
     }
-  }, [isAuthenticated, userData]);
+  }, [isAuthenticated, userData?.id]);
 
-  // Fetch recommendations when user data changes
+  // Fetch recommendations only once when user is authenticated
   useEffect(() => {
     fetchRecommendations();
   }, [fetchRecommendations]);
