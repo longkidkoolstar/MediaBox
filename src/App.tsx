@@ -62,7 +62,7 @@ const queryClient = new QueryClient({
 });
 
 const App = () => {
-  // Set up dark mode based on user preference
+  // Set up dark mode and global link handling
   useEffect(() => {
     const savedTheme = localStorage.getItem("theme");
     const prefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
@@ -75,6 +75,31 @@ const App = () => {
 
     // Initialize Firebase Analytics
     initAnalytics();
+
+    // Prevent external links from opening in the system browser
+    const handleExternalLinks = (e: MouseEvent) => {
+      const target = e.target as HTMLElement;
+      const anchor = target.closest('a');
+      
+      if (anchor && anchor.href) {
+        try {
+          const url = new URL(anchor.href);
+          const isExternal = url.origin !== window.location.origin && 
+                            !anchor.href.startsWith('mailto:') && 
+                            !anchor.href.startsWith('tel:');
+          
+          if (isExternal) {
+            e.preventDefault();
+            console.log('Blocked external link:', anchor.href);
+          }
+        } catch (err) {
+          // If URL parsing fails, ignore
+        }
+      }
+    };
+
+    document.addEventListener('click', handleExternalLinks, true);
+    return () => document.removeEventListener('click', handleExternalLinks, true);
   }, []);
 
   return (
