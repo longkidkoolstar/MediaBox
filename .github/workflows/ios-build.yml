@@ -1,12 +1,9 @@
 name: Build iOS IPA
 
 on:
-  workflow_dispatch:
-    inputs:
-      version:
-        description: 'Release version tag (e.g., v1.0.0)'
-        required: true
-        default: 'v1.0.0'
+  push:
+    tags:
+      - 'v*' # Triggers only when you push a tag that starts with 'v' (e.g., v1.0.0)
 
 permissions:
   contents: write # Required for creating releases
@@ -55,7 +52,6 @@ jobs:
       - name: Create Release and Upload IPA
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: ${{ github.event.inputs.version }}
-          name: Release ${{ github.event.inputs.version }}
+          # Automatically uses the pushed tag for the release name
           files: MediaBox.ipa
           generate_release_notes: true
