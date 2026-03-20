@@ -139,3 +139,20 @@
     @apply flex-shrink-0 snap-start;
   }
 }
+
+/* iOS Safe Area Support */
+.sticky.top-0 {
+  padding-top: env(safe-area-inset-top, 0px);
+}
+
+footer {
+  padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 2rem);
+}
+
+/* Mobile menu safe area */
+@media (max-width: 768px) {
+  /* This assumes the mobile menu overlay uses these fixed classes */
+  .fixed.inset-0.z-50 {
+    padding-top: env(safe-area-inset-top, 0px);
+  }
+}
